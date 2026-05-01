@@ -348,6 +348,7 @@ app.post("/create-meeting", async (req, res) => {
 
   } catch (err) {
     console.log("ERROR:", err.response?.data || err.message);
+    console.log("❌ STACK:", err.stack); // 👈 add this
     return res.json({
       conferenceId: "error-" + Date.now(),
       conferenceUrl: "https://meethour.io",
