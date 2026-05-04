@@ -49,11 +49,101 @@ app.get('/', (req, res) => {
   res.send('Server is responding!');
 });
 
+// // Step 1: HubSpot OAuth Callback
+// app.get('/callback', async (req, res) => {
+//   try {
+
+//     //to get code form url
+//     const code = req.query.code;
+
+//     //if no code throw err
+//     if (!code) {
+//       return res.status(400).send('No code provided!');
+//     }
+
+//     //taking the code from callback and exchanging to this api (code to get hubspot token)  
+//     const tokenResponse = await axios.post(
+//       'https://api.hubapi.com/oauth/v1/token',
+//       qs.stringify({
+//         grant_type: 'authorization_code',
+//         client_id: process.env.HUBSPOT_CLIENT_ID,
+//         client_secret: process.env.HUBSPOT_CLIENT_SECRET,
+//         redirect_uri: process.env.HUBSPOT_REDIRECT_URI,
+//         code: code
+//       }),
+//       //data type format
+//       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+//     );
+
+//     //extracting the access token from the API response
+//     const hubspotAccessToken = tokenResponse.data.access_token;
+
+//     //extracting the refresh token from the API response
+//     const hubspotRefreshToken = tokenResponse.data.refresh_token;
+
+//     //post request to fetch HubSpot portal info from access token
+//     const portalRes = await axios.get(`https://api.hubapi.com/oauth/v1/access-tokens/${hubspotAccessToken}`);
+
+//     // Getting HubSpot portal ID from access token
+//     const portalId = portalRes.data.hub_id;
+
+
+//     //loggin the portalID
+//     console.log(' HubSpot token saved for portal:', portalId);
+
+
+//     // Only save to DB if MongoDB is connected
+//     if (mongoose.connection.readyState === 1) {
+
+//       //check for hubspotPortalId if exist update it & if not create new 
+//       await Token.findOneAndUpdate(
+//         { hubspotPortalId: portalId },
+//         {
+//           //declaring the variable for storing token in db
+//           hubspotAccessToken,
+//           //declaring the variable for storing refresh token in db
+//           hubspotRefreshToken,
+//           //clearing old meethour token so status can reset to pending on reinstall
+//           meethourAccessToken: null,
+//           status: 'pending'
+//         },
+//         { upsert: true, new: true }
+//       );
+//       //loggin that we saved token to db
+//       console.log(' Token saved to DB');
+//       //else log error
+//     } else {
+//       console.log(' DB not available - token not saved');
+//       // req.session.portalId = portalId;  // Save in session as backup
+//     }
+
+//     //storing portalId in session
+//     // req.session.portalId = portalId;
+
+//     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
+
+//     //redirecting to meehtour service login page to get access token for creating meeting on token account
+//     res.redirect(
+//       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`
+//     );
+//   }
+
+//   //if anything fails log that error
+//   catch (err) {
+//     console.error('OAuth Error Details:', {
+//       message: err.message,
+//       response: err.response?.data,   // <-- This shows HubSpot's exact error reason
+//       status: err.response?.status
+//     });
+//     res.status(500).send(`Installation failed! ${err.message}`);
+//   }
+// });
+
 // Step 1: HubSpot OAuth Callback
 app.get('/callback', async (req, res) => {
   try {
 
-    //to get code form url
+    //to get code from url
     const code = req.query.code;
 
     //if no code throw err
@@ -83,17 +173,16 @@ app.get('/callback', async (req, res) => {
 
     //post request to fetch HubSpot portal info from access token
     const portalRes = await axios.get(`https://api.hubapi.com/oauth/v1/access-tokens/${hubspotAccessToken}`);
-    
+
     // Getting HubSpot portal ID from access token
     const portalId = portalRes.data.hub_id;
 
-
-    //loggin the portalID
+    //logging the portalID
     console.log(' HubSpot token saved for portal:', portalId);
-
 
     // Only save to DB if MongoDB is connected
     if (mongoose.connection.readyState === 1) {
+      console.log('✅ DB is connected, saving token...'); // debug log
 
       //check for hubspotPortalId if exist update it & if not create new 
       await Token.findOneAndUpdate(
@@ -103,48 +192,45 @@ app.get('/callback', async (req, res) => {
           hubspotAccessToken,
           //declaring the variable for storing refresh token in db
           hubspotRefreshToken,
+          //clearing old meethour token so status can reset to pending on reinstall
+          meethourAccessToken: null,
           status: 'pending'
         },
         { upsert: true, new: true }
       );
-      //loggin that we saved token to db
-      console.log(' Token saved to DB');
+      //logging that we saved token to db
+      console.log('✅ Token saved with status: pending'); // debug log
+
       //else log error
     } else {
-      console.log(' DB not available - token not saved');
-      // req.session.portalId = portalId;  // Save in session as backup
+      console.log('❌ DB readyState is:', mongoose.connection.readyState); // debug log
     }
-
-    //storing portalId in session
-    // req.session.portalId = portalId;
 
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
 
-    //redirecting to meehtour service login page to get access token for creating meeting on token account
+    //redirecting to meethour service login page to get access token for creating meeting on that account
     res.redirect(
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`
     );
   }
 
   //if anything fails log that error
- catch (err) {
-  console.error('OAuth Error Details:', {
-    message: err.message,
-    response: err.response?.data,   // <-- This shows HubSpot's exact error reason
-    status: err.response?.status
-  });
-  res.status(500).send(`Installation failed! ${err.message}`);
-}
+  catch (err) {
+    console.error('OAuth Error Details:', {
+      message: err.message,
+      response: err.response?.data,   // <-- This shows HubSpot's exact error reason
+      status: err.response?.status
+    });
+    res.status(500).send(`Installation failed! ${err.message}`);
+  }
 });
 
-
 // Step 2: MeetHour Callback redirect url after meethour login
-app.get('/meethour-callback', async (req, res) => 
-{
+app.get('/meethour-callback', async (req, res) => {
   //extracting the token after login
   try {
     const token = req.query.access_token;
-  //if token not found throw error
+    //if token not found throw error
     if (!token) {
       return res.status(400).send('No MeetHour token found!');
     }
@@ -163,12 +249,12 @@ app.get('/meethour-callback', async (req, res) =>
       // pick the latest user who is in pending state
       { hubspotPortalId: pendingRecord.hubspotPortalId },
       //Attach MeetHour token to that same HubSpot user and mark as completed
-      { 
+      {
         meethourAccessToken: token,
         status: 'active' // now active!
       }
     );
-    
+
     //loggin
     console.log(' MeetHour token saved for portal:', pendingRecord.hubspotPortalId);
 
@@ -176,7 +262,7 @@ app.get('/meethour-callback', async (req, res) =>
     res.send(' MeetHour connected successfully! You can close this tab.');
 
 
-  //logging the error 
+    //logging the error 
   } catch (err) {
     console.error('MeetHour Callback Error:', err.message);
     res.status(500).send('Something went wrong!');
@@ -276,11 +362,11 @@ app.post("/create-meeting", async (req, res) => {
       `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
     const attend = invitees
-    //if there is no email to invitee dont select that user
+      //if there is no email to invitee dont select that user
       .filter(i => i?.email)
       //checking for first name and storing making it as first_name,last_name
       .map(i => ({
-        first_name: i.firstName ,
+        first_name: i.firstName,
         last_name: i.lastName || "",
         email: i.email
       }));
@@ -348,7 +434,7 @@ app.post("/create-meeting", async (req, res) => {
 
   } catch (err) {
     console.log("ERROR:", err.response?.data || err.message);
-      console.log("❌ STACK:", err.stack);
+    console.log("❌ STACK:", err.stack);
     return res.json({
       conferenceId: "error-" + Date.now(),
       conferenceUrl: "https://meethour.io",
