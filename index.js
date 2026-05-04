@@ -283,25 +283,176 @@ function generatePasscode() {
 
 
 //creating webhook meeting from hubspot API
+// app.post("/create-meeting", async (req, res) => {
+//   try {
+//     console.log("------ NEW REQUEST ------");
+//     console.log("BODY:", JSON.stringify(req.body, null, 2));
+
+//     //getting timestamp millisecond
+//     // const now = Date.now();
+
+//     // //blocking req if it made in less then 4s  
+//     //   if (now - lastExecutionTime < 4000) {
+//     //     console.log(" Duplicate request blocked");
+//     //     return res.json({
+//     //       conferenceId: "dup-" + now,
+//     //       conferenceUrl: "https://meethour.io",
+//     //       conferenceDetails: "Duplicate request ignored"
+//     //     });
+//     //   }
+
+//     // lastExecutionTime = now;
+
+//     const invitees = req.body.invitees || [];
+
+//     //if no invitee from hubspot then
+//     if (invitees.length === 0) {
+//       //log no invitee if there is no mentioned
+//       console.log(" No invitees");
+//       return res.json({
+//         conferenceId: "no-attendees-" + now,
+//         conferenceUrl: "https://meethour.io",
+//         conferenceDetails: "No attendees provided"
+//       });
+//     }
+
+//     // Get portalId from request
+//     const portalId = req.body.portalId;
+
+//     //if we dont find portalId log no portalid found
+//     if (!portalId) {
+//       console.log(" No portalId in request");
+//       return res.json({
+//         conferenceId: "error-" + now,
+//         conferenceUrl: "https://meethour.io",
+//         conferenceDetails: "Portal ID missing"
+//       });
+//     }
+
+//     // Fetch MeetHour token from DB dynamically
+//     const tokenRecord = await Token.findOne({ hubspotPortalId: portalId });
+
+//     // Check if user exists in DB and has MeetHour token
+//     if (!tokenRecord || !tokenRecord.meethourAccessToken) {
+//       console.log("No MeetHour token found for portal:", portalId);
+
+//       // Return error response if MeetHour is not connected
+//       return res.json({
+//         conferenceId: "error-" + now,
+//         conferenceUrl: "https://meethour.io",
+//         conferenceDetails: "MeetHour not connected for this account"
+//       });
+//     }
+
+//     //getting token from tokenrecord from database 
+//     const token = tokenRecord.meethourAccessToken; // ✅ Dynamic token!
+
+//     //converting valid input (time) into js date object 
+//     const start = new Date(req.body.startTime);
+
+//     //converting js obj date to str and collecting just the date by doing this[0] =>date!
+//     const meeting_date = start.toISOString().split("T")[0];
+
+//     //converting 24hr to 12hr format
+//     let hours = start.getHours();
+//     const minutes = start.getMinutes();
+//     const meridiem = hours >= 12 ? "PM" : "AM";
+//     hours = hours % 12 || 12;
+
+//     //converting if time (intr) to (str) and it has 2 digits like 03 => 3 to create meeting in meethour 
+//     const meeting_time =
+//       `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+
+//     const attend = invitees
+//       //if there is no email to invitee dont select that user
+//       .filter(i => i?.email)
+//       //checking for first name and storing making it as first_name,last_name
+//       .map(i => ({
+//         first_name: i.firstName,
+//         last_name: i.lastName || "",
+//         email: i.email
+//       }));
+
+//     //these all will be sent to meethour api (schedulemeeting) to schedule meeting.
+//     const payload = {
+//       meeting_name: req.body.topic,
+//       meeting_date,
+//       meeting_time,
+//       meeting_meridiem: meridiem,
+//       timezone: convertHubspotTimezone(req.body.timezone),
+//       passcode: generatePasscode(),
+//       attend,
+//       send_calendar_invite: 1
+//     };
+
+//     //making post req to meethour for scheduling meeting
+//     const response = await axios.post(
+//       "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
+//       payload,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json"
+//         }
+//       }
+//     );
+
+//     //extracting the data after creating meeting to show in meetings tab in hubspot
+//     const meeting = response.data.data;
+
+//     //converting time into readable format so that we can send details with this time & date format
+//     const formattedTime = new Date(req.body.startTime).toLocaleString("en-US", {
+//       dateStyle: "medium",
+//       timeStyle: "short"
+//     });
+
+//     //Meeting details that will shown in the meetings tab in hubspot
+//     const details = `
+//       <b>Layeeq Ahmed is inviting you to a scheduled meeting.</b><br>
+//       <b>Topic:</b> ${meeting.topic}<br>
+//       <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
+//       <b>Join Meeting:</b> ${meeting.joinURL}<br>
+//       <b>Meeting ID:</b> ${meeting.meeting_id}<br>
+//       <b>Passcode:</b> ${meeting.passcode}<br>
+//     `;
+
+//     //meeting datails that will be updated in database
+//     await Meeting.create({
+//       hubspotMeetingId: `${req.body.portalId}-${req.body.startTime}`,
+//       hubspotPortalId: portalId,
+//       meethourMeetingId: meeting.meeting_id,
+//       meethourMeetingUrl: meeting.joinURL,
+//       meetingName: req.body.topic || "HubSpot Meeting",
+//       conferenceId: String(meeting.id)  // ✅ save conferenceId
+//     });
+
+//     console.log('Meeting saved to DB! ✅');
+
+//     return res.json({
+//       conferenceId: meeting.id,
+//       conferenceUrl: meeting.joinURL,
+//       conferenceDetails: details
+//     });
+
+//   } catch (err) {
+//     console.log("ERROR:", err.response?.data || err.message);
+//     console.log("❌ STACK:", err.stack);
+//     return res.json({
+//       conferenceId: "error-" + Date.now(),
+//       conferenceUrl: "https://meethour.io",
+//       conferenceDetails: "Temporary issue, try again"
+//     });
+//   }
+// });
+
 app.post("/create-meeting", async (req, res) => {
   try {
     console.log("------ NEW REQUEST ------");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
-    //getting timestamp millisecond
-    // const now = Date.now();
-
-    // //blocking req if it made in less then 4s  
-    //   if (now - lastExecutionTime < 4000) {
-    //     console.log(" Duplicate request blocked");
-    //     return res.json({
-    //       conferenceId: "dup-" + now,
-    //       conferenceUrl: "https://meethour.io",
-    //       conferenceDetails: "Duplicate request ignored"
-    //     });
-    //   }
-
-    // lastExecutionTime = now;
+    // Wait for DB to connect before doing anything else
+    // This is needed because Vercel is serverless and DB may not be connected yet
+    await connectDB();
 
     const invitees = req.body.invitees || [];
 
@@ -310,7 +461,7 @@ app.post("/create-meeting", async (req, res) => {
       //log no invitee if there is no mentioned
       console.log(" No invitees");
       return res.json({
-        conferenceId: "no-attendees-" + now,
+        conferenceId: "no-attendees-" + Date.now(),
         conferenceUrl: "https://meethour.io",
         conferenceDetails: "No attendees provided"
       });
@@ -319,11 +470,11 @@ app.post("/create-meeting", async (req, res) => {
     // Get portalId from request
     const portalId = req.body.portalId;
 
-    //if we dont find portalId log no portalid found
+    //if we dont find portalId log no portalId found
     if (!portalId) {
       console.log(" No portalId in request");
       return res.json({
-        conferenceId: "error-" + now,
+        conferenceId: "error-" + Date.now(),
         conferenceUrl: "https://meethour.io",
         conferenceDetails: "Portal ID missing"
       });
@@ -338,14 +489,14 @@ app.post("/create-meeting", async (req, res) => {
 
       // Return error response if MeetHour is not connected
       return res.json({
-        conferenceId: "error-" + now,
+        conferenceId: "error-" + Date.now(),
         conferenceUrl: "https://meethour.io",
         conferenceDetails: "MeetHour not connected for this account"
       });
     }
 
-    //getting token from tokenrecord from database 
-    const token = tokenRecord.meethourAccessToken; // ✅ Dynamic token!
+    //getting token from tokenRecord from database 
+    const token = tokenRecord.meethourAccessToken;
 
     //converting valid input (time) into js date object 
     const start = new Date(req.body.startTime);
@@ -359,7 +510,7 @@ app.post("/create-meeting", async (req, res) => {
     const meridiem = hours >= 12 ? "PM" : "AM";
     hours = hours % 12 || 12;
 
-    //converting if time (intr) to (str) and it has 2 digits like 03 => 3 to create meeting in meethour 
+    //converting time (int) to (str) and padding to 2 digits like 3 => 03 to create meeting in meethour 
     const meeting_time =
       `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
@@ -373,7 +524,7 @@ app.post("/create-meeting", async (req, res) => {
         email: i.email
       }));
 
-    //these all will be sent to meethour api (schedulemeeting) to schedule meeting.
+    //these all will be sent to meethour api (schedulemeeting) to schedule meeting
     const payload = {
       meeting_name: req.body.topic,
       meeting_date,
@@ -406,7 +557,7 @@ app.post("/create-meeting", async (req, res) => {
       timeStyle: "short"
     });
 
-    //Meeting details that will shown in the meetings tab in hubspot
+    //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
       <b>Layeeq Ahmed is inviting you to a scheduled meeting.</b><br>
       <b>Topic:</b> ${meeting.topic}<br>
@@ -416,14 +567,14 @@ app.post("/create-meeting", async (req, res) => {
       <b>Passcode:</b> ${meeting.passcode}<br>
     `;
 
-    //meeting datails that will be updated in database
+    //meeting details that will be saved in the database
     await Meeting.create({
       hubspotMeetingId: `${req.body.portalId}-${req.body.startTime}`,
       hubspotPortalId: portalId,
       meethourMeetingId: meeting.meeting_id,
       meethourMeetingUrl: meeting.joinURL,
       meetingName: req.body.topic || "HubSpot Meeting",
-      conferenceId: String(meeting.id)  // ✅ save conferenceId
+      conferenceId: String(meeting.id)  // save conferenceId
     });
 
     console.log('Meeting saved to DB! ✅');
