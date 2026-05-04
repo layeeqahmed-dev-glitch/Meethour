@@ -116,7 +116,7 @@ app.get('/callback', async (req, res) => {
     }
 
     //storing portalId in session
-    req.session.portalId = portalId;
+    // req.session.portalId = portalId;
 
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
 
