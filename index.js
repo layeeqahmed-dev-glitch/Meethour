@@ -127,14 +127,14 @@ app.get('/callback', async (req, res) => {
   }
 
   //if anything fails log that error
-  catch (err) {
-    console.error('OAuth Error Details:', {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status
-    });
-    res.status(500).send(`Installation failed! ${err.message}`);
-  }
+ catch (err) {
+  console.error('OAuth Error Details:', {
+    message: err.message,
+    response: err.response?.data,   // <-- This shows HubSpot's exact error reason
+    status: err.response?.status
+  });
+  res.status(500).send(`Installation failed! ${err.message}`);
+}
 });
 
 
@@ -348,7 +348,7 @@ app.post("/create-meeting", async (req, res) => {
 
   } catch (err) {
     console.log("ERROR:", err.response?.data || err.message);
-    console.log("❌ STACK:", err.stack); // 👈 add this
+      console.log("❌ STACK:", err.stack);
     return res.json({
       conferenceId: "error-" + Date.now(),
       conferenceUrl: "https://meethour.io",

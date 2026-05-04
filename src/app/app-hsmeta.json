@@ -8,7 +8,7 @@
     "auth": {
       "type": "oauth",
       "redirectUrls": [
-        "https://taxonomic-wonky-carley.ngrok-free.dev/callback"
+        "https://meethourhubs.vercel.app/callback"
       ],
       "requiredScopes": [
         "oauth",
@@ -26,7 +26,7 @@
       "img": []
     },
     "support": {
-      "supportEmail": "support@example.com",
+      "supportEmail": "hello@meethour.io",
       "documentationUrl": "https://example.com/docs",
       "supportUrl": "https://example.com/support",
       "supportPhone": "+18005555555"
