@@ -140,6 +140,7 @@ app.get('/', (req, res) => {
 // });
 
 // Step 1: HubSpot OAuth Callback
+// Step 1: HubSpot OAuth Callback
 app.get('/callback', async (req, res) => {
   try {
 
@@ -150,6 +151,10 @@ app.get('/callback', async (req, res) => {
     if (!code) {
       return res.status(400).send('No code provided!');
     }
+
+    // Wait for DB to connect before doing anything else
+    // This is needed because Vercel is serverless and DB may not be connected yet
+    await connectDB();
 
     //taking the code from callback and exchanging to this api (code to get hubspot token)  
     const tokenResponse = await axios.post(
@@ -178,33 +183,25 @@ app.get('/callback', async (req, res) => {
     const portalId = portalRes.data.hub_id;
 
     //logging the portalID
-    console.log(' HubSpot token saved for portal:', portalId);
+    console.log('HubSpot token saved for portal:', portalId);
 
-    // Only save to DB if MongoDB is connected
-    if (mongoose.connection.readyState === 1) {
-      console.log('✅ DB is connected, saving token...'); // debug log
+    //check for hubspotPortalId if exist update it & if not create new 
+    await Token.findOneAndUpdate(
+      { hubspotPortalId: portalId },
+      {
+        //declaring the variable for storing token in db
+        hubspotAccessToken,
+        //declaring the variable for storing refresh token in db
+        hubspotRefreshToken,
+        //clearing old meethour token so status can reset to pending on reinstall
+        meethourAccessToken: null,
+        status: 'pending'
+      },
+      { upsert: true, new: true }
+    );
 
-      //check for hubspotPortalId if exist update it & if not create new 
-      await Token.findOneAndUpdate(
-        { hubspotPortalId: portalId },
-        {
-          //declaring the variable for storing token in db
-          hubspotAccessToken,
-          //declaring the variable for storing refresh token in db
-          hubspotRefreshToken,
-          //clearing old meethour token so status can reset to pending on reinstall
-          meethourAccessToken: null,
-          status: 'pending'
-        },
-        { upsert: true, new: true }
-      );
-      //logging that we saved token to db
-      console.log('✅ Token saved with status: pending'); // debug log
-
-      //else log error
-    } else {
-      console.log('❌ DB readyState is:', mongoose.connection.readyState); // debug log
-    }
+    //logging that we saved token to db
+    console.log('✅ Token saved with status: pending');
 
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
 
@@ -212,13 +209,12 @@ app.get('/callback', async (req, res) => {
     res.redirect(
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`
     );
-  }
 
   //if anything fails log that error
-  catch (err) {
+  } catch (err) {
     console.error('OAuth Error Details:', {
       message: err.message,
-      response: err.response?.data,   // <-- This shows HubSpot's exact error reason
+      response: err.response?.data,
       status: err.response?.status
     });
     res.status(500).send(`Installation failed! ${err.message}`);
@@ -229,7 +225,13 @@ app.get('/callback', async (req, res) => {
 app.get('/meethour-callback', async (req, res) => {
   //extracting the token after login
   try {
+
+    // Wait for DB to connect before doing anything else
+    // This is needed because Vercel is serverless and DB may not be connected yet
+    await connectDB();
+
     const token = req.query.access_token;
+
     //if token not found throw error
     if (!token) {
       return res.status(400).send('No MeetHour token found!');
