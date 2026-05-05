@@ -562,6 +562,7 @@ app.post("/create-meeting", async (req, res) => {
       `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
       { headers: { Authorization: `Bearer ${tokenRecord.hubspotAccessToken}` } }
     );
+    const ownerName = `${ownerRes.data.firstName} ${ownerRes.data.lastName}`;
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
