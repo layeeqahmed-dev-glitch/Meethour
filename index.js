@@ -525,7 +525,7 @@ app.post("/create-meeting", async (req, res) => {
     console.log("meeting_date:", meeting_date);
     console.log("meeting_time:", meeting_time);
     console.log("meridiem:", meridiem);
-    
+
     const attend = invitees
       //if there is no email to invitee dont select that user
       .filter(i => i?.email)
@@ -564,9 +564,10 @@ app.post("/create-meeting", async (req, res) => {
     const meeting = response.data.data;
 
     //converting time into readable format so that we can send details with this time & date format
-    const formattedTime = new Date(req.body.startTime).toLocaleString("en-US", {
+    const formattedTime = istDate.toLocaleString("en-US", {
       dateStyle: "medium",
-      timeStyle: "short"
+      timeStyle: "short",
+      timeZone: "Asia/Kolkata"
     });
 
     //// Fetch user name from HubSpot using userId sent in request
