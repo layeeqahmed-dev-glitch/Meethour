@@ -23,6 +23,12 @@ connectDB()
 // Parse all incoming request bodies as plain text
 app.use(express.text({ type: "*/*" }));
 
+//// Fetch user name from HubSpot using userId sent in request
+const ownerRes = await axios.get(
+  `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
+  { headers: { Authorization: `Bearer ${tokenRecord.hubspotAccessToken}` } }
+);
+
 // let lastExecutionTime = 0;
 
 // // Configure session middleware to store user session data
@@ -275,7 +281,7 @@ app.get('/meethour-callback', async (req, res) => {
 function generatePasscode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let passcode = '';
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     passcode += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return passcode;
@@ -559,7 +565,7 @@ app.post("/create-meeting", async (req, res) => {
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
-      <b>Layeeq Ahmed is inviting you to a scheduled meeting.</b><br>
+      <b>${ownerName}is inviting you to a scheduled meeting.</b><br>
       <b>Topic:</b> ${meeting.topic}<br>
       <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
       <b>Join Meeting:</b> ${meeting.joinURL}<br>
@@ -668,5 +674,7 @@ app.post("/delete-meeting", async (req, res) => {
 if (process.env.NODE_ENV !== 'production') {
   app.listen(3000, () => console.log("Server running on port 3000"));
 }
+
+const ownerName = `${ownerRes.data.firstName} ${ownerRes.data.lastName}`;
 
 module.exports = app;
