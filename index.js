@@ -23,12 +23,6 @@ connectDB()
 // Parse all incoming request bodies as plain text
 app.use(express.text({ type: "*/*" }));
 
-//// Fetch user name from HubSpot using userId sent in request
-const ownerRes = await axios.get(
-  `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
-  { headers: { Authorization: `Bearer ${tokenRecord.hubspotAccessToken}` } }
-);
-
 // let lastExecutionTime = 0;
 
 // // Configure session middleware to store user session data
@@ -216,7 +210,7 @@ app.get('/callback', async (req, res) => {
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`
     );
 
-  //if anything fails log that error
+    //if anything fails log that error
   } catch (err) {
     console.error('OAuth Error Details:', {
       message: err.message,
@@ -562,6 +556,12 @@ app.post("/create-meeting", async (req, res) => {
       dateStyle: "medium",
       timeStyle: "short"
     });
+
+    //// Fetch user name from HubSpot using userId sent in request
+    const ownerRes = await axios.get(
+      `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
+      { headers: { Authorization: `Bearer ${tokenRecord.hubspotAccessToken}` } }
+    );
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
