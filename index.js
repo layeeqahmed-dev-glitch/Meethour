@@ -522,6 +522,10 @@ app.post("/create-meeting", async (req, res) => {
     // Pad hours and minutes to 2 digits e.g. 3 => 03
     const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
+    console.log("meeting_date:", meeting_date);
+    console.log("meeting_time:", meeting_time);
+    console.log("meridiem:", meridiem);
+    
     const attend = invitees
       //if there is no email to invitee dont select that user
       .filter(i => i?.email)
