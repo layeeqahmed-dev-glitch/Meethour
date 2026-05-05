@@ -449,7 +449,7 @@ app.post("/create-meeting", async (req, res) => {
   try {
     console.log("------ NEW REQUEST ------");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
-
+    console.log("TIMEZONE:", req.body.timezone);
     // Wait for DB to connect before doing anything else
     // This is needed because Vercel is serverless and DB may not be connected yet
     await connectDB();
@@ -566,7 +566,7 @@ app.post("/create-meeting", async (req, res) => {
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
-      <b>${ownerName}is inviting you to a scheduled meeting.</b><br>
+      <b>${ownerName} is inviting you to a scheduled meeting.</b><br>
       <b>Topic:</b> ${meeting.topic}<br>
       <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
       <b>Join Meeting:</b> ${meeting.joinURL}<br>
