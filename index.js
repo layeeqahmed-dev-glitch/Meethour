@@ -499,20 +499,28 @@ app.post("/create-meeting", async (req, res) => {
     const token = tokenRecord.meethourAccessToken;
 
     //converting valid input (time) into js date object 
+    // Convert UTC timestamp from HubSpot to JS Date object
     const start = new Date(req.body.startTime);
 
-    //converting js obj date to str and collecting just the date by doing this[0] =>date!
-    const meeting_date = start.toISOString().split("T")[0];
+    // Convert UTC to IST by using Asia/Kolkata timezone
+    // toLocaleString gives us the time in IST as a string, then we wrap it in new Date()
+    const istDate = new Date(start.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
-    //converting 24hr to 12hr format
-    let hours = start.getHours();
-    const minutes = start.getMinutes();
+    // Extract date in YYYY-MM-DD format from IST date
+    const meeting_date = `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
+
+    // Extract hours and minutes from IST date (not UTC)
+    let hours = istDate.getHours();
+    const minutes = istDate.getMinutes();
+
+    // Determine AM or PM
     const meridiem = hours >= 12 ? "PM" : "AM";
+
+    // Convert 24hr to 12hr format
     hours = hours % 12 || 12;
 
-    //converting time (int) to (str) and padding to 2 digits like 3 => 03 to create meeting in meethour 
-    const meeting_time =
-      `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    // Pad hours and minutes to 2 digits e.g. 3 => 03
+    const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
     const attend = invitees
       //if there is no email to invitee dont select that user
