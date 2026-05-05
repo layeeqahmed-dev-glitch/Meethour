@@ -618,28 +618,29 @@ app.post("/create-meeting", async (req, res) => {
 
 
 // delete meeting route
+
 app.post("/delete-meeting", async (req, res) => {
   try {
     console.log("------ DELETE MEETING REQUEST ------");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
+    // Wait for DB to connect (needed for Vercel serverless)
+    await connectDB();
+
     const portalId = req.body.portalId;
-    const conferenceId = req.body.conferenceId; // ✅ get conferenceId
+    const conferenceId = req.body.conferenceId;
 
-
-    //checking for portal id
     if (!portalId) {
       console.log("❌ No portalId found");
       return res.status(400).send('Portal ID missing');
     }
 
-    //checking for confrence ID
     if (!conferenceId) {
       console.log("❌ No conferenceId found");
       return res.status(400).send('Conference ID missing');
     }
 
-    // Fetch MeetHour token from DB to del meeting from that token account
+    // Fetch MeetHour token from DB
     const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
 
     if (!tokenRecord || !tokenRecord.meethourAccessToken) {
@@ -649,7 +650,7 @@ app.post("/delete-meeting", async (req, res) => {
 
     const token = tokenRecord.meethourAccessToken;
 
-    //  Find meeting by conferenceId
+    // Find meeting in DB by conferenceId
     const meetingRecord = await Meeting.findOne({ conferenceId: String(conferenceId) });
 
     if (!meetingRecord) {
@@ -659,7 +660,7 @@ app.post("/delete-meeting", async (req, res) => {
 
     console.log("Found meeting in DB:", meetingRecord.meethourMeetingId);
 
-    // Call MeetHour delete API to delete meeting
+    // Delete meeting from MeetHour
     const response = await axios.post(
       "https://api.meethour.io/api/v1.2/meeting/deletemeeting",
       { meeting_id: meetingRecord.meethourMeetingId },
@@ -671,15 +672,16 @@ app.post("/delete-meeting", async (req, res) => {
       }
     );
 
-    console.log(" Meeting deleted from MeetHour:", response.data);
+    console.log("✅ Meeting deleted from MeetHour:", response.data);
 
-    //  Delete from DB as well
+    // Delete from DB
     await Meeting.findOneAndDelete({ conferenceId: String(conferenceId) });
-    console.log(" Meeting deleted from DB!");
+    console.log("✅ Meeting deleted from DB!");
+
     return res.status(200).send('Meeting deleted successfully!');
 
   } catch (err) {
-    console.error("Delete Meeting Error:", err.response?.data || err.message);
+    console.error("❌ Delete Meeting Error:", err.response?.data || err.message);
     return res.status(500).send('Something went wrong!');
   }
 });
