@@ -599,10 +599,15 @@ app.post("/create-meeting", async (req, res) => {
 
     console.log('Meeting saved to DB! ✅');
 
+    // return res.json({
+    //   conferenceId: meeting.id,
+    //   conferenceUrl: meeting.joinURL,
+    //   conferenceDetails: details
+    // });
+
     return res.json({
-      conferenceId: meeting.id,
-      conferenceUrl: meeting.joinURL,
-      conferenceDetails: details
+      conferenceId: String(meeting.id),
+      conferenceUrl: meeting.joinURL
     });
 
   } catch (err) {
