@@ -154,7 +154,7 @@ app.get('/callback', async (req, res) => {
 
     // Wait for DB to connect before doing anything else
     // This is needed because Vercel is serverless and DB may not be connected yet
-    await connectDB();
+    // await connectDB();
 
     //taking the code from callback and exchanging to this api (code to get hubspot token)  
     const tokenResponse = await axios.post(
@@ -623,7 +623,6 @@ app.post("/create-meeting", async (req, res) => {
 
 
 // delete meeting route
-
 app.post("/delete-meeting", async (req, res) => {
   try {
     console.log("------ DELETE MEETING REQUEST ------");

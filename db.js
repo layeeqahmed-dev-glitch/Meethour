@@ -16,10 +16,10 @@ const connectDB = async () => {
     console.log("🔍 USING URI:", process.env.MONGO_URI);
 
     const db = await mongoose.connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 30000,
-      tls: true,                  // ✅ enable TLS/SSL
+      serverSelectionTimeoutMS: 5000,  // 30000 → 5000
+      socketTimeoutMS: 10000,          // 45000 → 10000
+      connectTimeoutMS: 5000,          // 30000 → 5000
+      tls: true,
       tlsAllowInvalidCertificates: false,
     });
 
