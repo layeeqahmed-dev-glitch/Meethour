@@ -23,6 +23,32 @@ connectDB()
 // Parse all incoming request bodies as plain text
 app.use(express.text({ type: "*/*" }));
 
+//hubspot token refresh function
+const refreshHubspotToken = async (portalId) => {
+  const tokenRecord = await Token.findOne({ hubspotPortalId: portalId });
+
+  const response = await axios.post(
+    "https://api.hubapi.com/oauth/v1/token",
+    new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: process.env.HUBSPOT_CLIENT_ID,
+      client_secret: process.env.HUBSPOT_CLIENT_SECRET,
+      refresh_token: tokenRecord.hubspotRefreshToken
+    }),
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  );
+
+  await Token.findOneAndUpdate(
+    { hubspotPortalId: portalId },
+    {
+      hubspotAccessToken: response.data.access_token,
+      hubspotRefreshToken: response.data.refresh_token
+    }
+  );
+
+  return response.data.access_token;
+};
+
 // let lastExecutionTime = 0;
 
 // // Configure session middleware to store user session data
@@ -571,10 +597,13 @@ app.post("/create-meeting", async (req, res) => {
     });
 
     //// Fetch user name from HubSpot using userId sent in request
-    const ownerRes = await axios.get(
-      `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
-      { headers: { Authorization: `Bearer ${tokenRecord.hubspotAccessToken}` } }
-    );
+    const freshHubspotToken = await refreshHubspotToken(portalId);
+
+// phir use karo
+const ownerRes = await axios.get(
+  `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
+  { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
+);
     const ownerName = `${ownerRes.data.firstName} ${ownerRes.data.lastName}`;
 
     //Meeting details that will be shown in the meetings tab in hubspot
