@@ -599,19 +599,20 @@ app.post("/create-meeting", async (req, res) => {
     //// Fetch user name from HubSpot using userId sent in request
     const freshHubspotToken = await refreshHubspotToken(portalId);
 
-// phir use karo
-const ownerRes = await axios.get(
-  `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
-  { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
-);
+    // phir use karo
+    const ownerRes = await axios.get(
+      `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
+      { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
+    );
     const ownerName = `${ownerRes.data.firstName} ${ownerRes.data.lastName}`;
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
-      <b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+      ${ownerName} is inviting you to a scheduled MeetHour meeting.<br><br>
       <b>Topic:</b> ${meeting.topic}<br>
       <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
-      <b>Join Meeting:</b> ${meeting.joinURL}<br>
+      <b>Join MeetHour Meeting</b><br>
+      ${meeting.joinURL}<br><br>
       <b>Meeting ID:</b> ${meeting.meeting_id}<br>
       <b>Passcode:</b> ${meeting.passcode}<br>
     `;
