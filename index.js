@@ -721,29 +721,25 @@ app.post("/delete-meeting", async (req, res) => {
 
 
 //hubspot webhook to get the data form meeting scheduler
+
 app.post('/webhook/hubspot-booking', async (req, res) => {
   try {
     await connectDB();
     
     const events = req.body;
-
-    // Step 1: Meeting booking event check karo
     const bookingEvent = events.find(e => e.sourceId === 'sales-meetings-booking');
     if (!bookingEvent) return res.sendStatus(200);
 
     const { portalId, objectId } = bookingEvent;
 
-    // Step 2: DB se tokens fetch karo
     const tokenDoc = await Token.findOne({ hubspotPortalId: String(portalId) });
     if (!tokenDoc || !tokenDoc.meethourAccessToken) {
       console.log('No tokens found for portal:', portalId);
       return res.sendStatus(200);
     }
 
-    // Step 3: HubSpot token refresh karo
     const hubspotToken = await refreshHubspotToken(String(portalId));
 
-    // Step 4: Contact se associated meetings fetch karo
     const engagementRes = await axios.get(
       `https://api.hubapi.com/engagements/v1/engagements/associated/contact/${objectId}/paged`,
       { headers: { Authorization: `Bearer ${hubspotToken}` } }
@@ -755,11 +751,9 @@ app.post('/webhook/hubspot-booking', async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // Step 5: Latest meeting lo
     const latest = meetings[0];
     const { startTime, endTime, title, timezone } = latest.metadata;
 
-    // Step 6: Time convert karo (same as create-meeting route)
     const start = new Date(startTime);
     const istDate = new Date(start.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
@@ -775,7 +769,6 @@ app.post('/webhook/hubspot-booking', async (req, res) => {
     const duration_hr = Math.floor(durationMs / 3600000);
     const duration_min = Math.floor((durationMs % 3600000) / 60000);
 
-    // Step 7: MeetHour API call
     const payload = {
       meeting_name: title,
       meeting_date,
@@ -804,7 +797,6 @@ app.post('/webhook/hubspot-booking', async (req, res) => {
     const meeting = meethourRes.data.data;
     console.log('MeetHour Meeting Created ✅:', meeting);
 
-    // Step 8: DB mein save karo
     await Meeting.create({
       hubspotMeetingId: `${portalId}-${startTime}`,
       hubspotPortalId: String(portalId),
@@ -819,7 +811,10 @@ app.post('/webhook/hubspot-booking', async (req, res) => {
 
   } catch (error) {
     console.error('Webhook Error:', error.response?.data || error.message);
-    res.sendStatus(500);
+    // Check if response already sent
+    if (!res.headersSent) {
+      res.sendStatus(500);
+    }
   }
 });
 
