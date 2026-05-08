@@ -720,6 +720,19 @@ app.post("/delete-meeting", async (req, res) => {
   }
 });
 
+
+//hubspot webhook to get the data form meeting scheduler
+app.post('/webhook/hubspot-booking', async (req, res) => {
+  try {
+    console.log('HubSpot Webhook Payload:', JSON.stringify(req.body, null, 2));
+    res.sendStatus(200);
+  } catch (error) {
+    console.error(error);
+    res.sendStatus(500);
+  }
+});
+
+
 //localhost running @ 3000
 if (process.env.NODE_ENV !== 'production') {
   app.listen(3000, () => console.log("Server running on port 3000"));
