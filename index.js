@@ -723,15 +723,9 @@ app.post("/delete-meeting", async (req, res) => {
 
 //hubspot webhook to get the data form meeting scheduler
 app.post('/webhook/hubspot-booking', async (req, res) => {
-  try {
-    console.log('HubSpot Webhook Payload:', JSON.stringify(req.body, null, 2));
-    res.sendStatus(200);
-  } catch (error) {
-    console.error(error);
-    res.sendStatus(500);
-  }
+  console.log('Payload:', JSON.stringify(req.body, null, 2));
+  res.status(200).json(req.body); // payload wapas bhej do
 });
-
 
 //localhost running @ 3000
 if (process.env.NODE_ENV !== 'production') {
