@@ -722,8 +722,105 @@ app.post("/delete-meeting", async (req, res) => {
 
 //hubspot webhook to get the data form meeting scheduler
 app.post('/webhook/hubspot-booking', async (req, res) => {
-  console.log('Payload:', JSON.stringify(req.body, null, 2));
-  res.status(200).json(req.body); // payload wapas bhej do
+  try {
+    await connectDB();
+    
+    const events = req.body;
+
+    // Step 1: Meeting booking event check karo
+    const bookingEvent = events.find(e => e.sourceId === 'sales-meetings-booking');
+    if (!bookingEvent) return res.sendStatus(200);
+
+    const { portalId, objectId } = bookingEvent;
+
+    // Step 2: DB se tokens fetch karo
+    const tokenDoc = await Token.findOne({ hubspotPortalId: String(portalId) });
+    if (!tokenDoc || !tokenDoc.meethourAccessToken) {
+      console.log('No tokens found for portal:', portalId);
+      return res.sendStatus(200);
+    }
+
+    // Step 3: HubSpot token refresh karo
+    const hubspotToken = await refreshHubspotToken(String(portalId));
+
+    // Step 4: Contact se associated meetings fetch karo
+    const engagementRes = await axios.get(
+      `https://api.hubapi.com/engagements/v1/engagements/associated/contact/${objectId}/paged`,
+      { headers: { Authorization: `Bearer ${hubspotToken}` } }
+    );
+
+    const meetings = engagementRes.data.results.filter(e => e.engagement.type === 'MEETING');
+    if (!meetings.length) {
+      console.log('No meetings found for contact:', objectId);
+      return res.sendStatus(200);
+    }
+
+    // Step 5: Latest meeting lo
+    const latest = meetings[0];
+    const { startTime, endTime, title, timezone } = latest.metadata;
+
+    // Step 6: Time convert karo (same as create-meeting route)
+    const start = new Date(startTime);
+    const istDate = new Date(start.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+
+    const meeting_date = `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
+
+    let hours = istDate.getHours();
+    const minutes = istDate.getMinutes();
+    const meridiem = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+
+    const durationMs = endTime - startTime;
+    const duration_hr = Math.floor(durationMs / 3600000);
+    const duration_min = Math.floor((durationMs % 3600000) / 60000);
+
+    // Step 7: MeetHour API call
+    const payload = {
+      meeting_name: title,
+      meeting_date,
+      meeting_time,
+      meeting_meridiem: meridiem,
+      timezone: convertHubspotTimezone(timezone),
+      passcode: generatePasscode(),
+      duration_hr,
+      duration_min,
+      send_calendar_invite: 1
+    };
+
+    console.log('MeetHour Payload:', payload);
+
+    const meethourRes = await axios.post(
+      'https://api.meethour.io/api/v1.2/meeting/schedulemeeting',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${tokenDoc.meethourAccessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const meeting = meethourRes.data.data;
+    console.log('MeetHour Meeting Created ✅:', meeting);
+
+    // Step 8: DB mein save karo
+    await Meeting.create({
+      hubspotMeetingId: `${portalId}-${startTime}`,
+      hubspotPortalId: String(portalId),
+      meethourMeetingId: meeting.meeting_id,
+      meethourMeetingUrl: meeting.joinURL,
+      meetingName: title,
+      conferenceId: String(meeting.id)
+    });
+
+    console.log('Meeting saved to DB ✅');
+    res.sendStatus(200);
+
+  } catch (error) {
+    console.error('Webhook Error:', error.response?.data || error.message);
+    res.sendStatus(500);
+  }
 });
 
 //localhost running @ 3000
