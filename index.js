@@ -608,14 +608,13 @@ app.post("/create-meeting", async (req, res) => {
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
-      ${ownerName} is inviting you to a scheduled MeetHour meeting.<br><br>
-      <b>Topic:</b> ${meeting.topic}<br>
-      <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
-      <b>Join MeetHour Meeting</b><br>
-      ${meeting.joinURL}<br><br>
-      <b>Meeting ID:</b> ${meeting.meeting_id}<br>
-      <b>Passcode:</b> ${meeting.passcode}<br>
-    `;
+        <b>${ownerName} is inviting you to a scheduled MeetHour meeting.</b><br>
+        <b>Topic:</b> ${meeting.topic}
+        <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
+        <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
+        <b>Meeting ID:</b> ${meeting.meeting_id}
+        <b>Passcode:</b> ${meeting.passcode}
+      `;
 
     //meeting details that will be saved in the database
     await Meeting.create({
