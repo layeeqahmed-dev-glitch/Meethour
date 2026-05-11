@@ -142,7 +142,7 @@ app.get('/callback', async (req, res) => {
 
     //redirecting to meethour service login page to get access token for creating meeting on that account
     res.redirect(
-      `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&state=${portalId}&device_type=web&response_type=get`
+      `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`
     );
 
     //if anything fails log that error
@@ -155,34 +155,58 @@ app.get('/callback', async (req, res) => {
     res.status(500).send(`Installation failed! ${err.message}`);
   }
 });
+
+// Step 2: MeetHour Callback redirect url after meethour login
 app.get('/meethour-callback', async (req, res) => {
+  //extracting the token after login
   try {
+
+    // Wait for DB to connect before doing anything else
+    // This is needed because Vercel is serverless and DB may not be connected yet
     await connectDB();
 
     const token = req.query.access_token;
-    const portalId = req.query.state;
 
+    //if token not found throw error
     if (!token) {
       return res.status(400).send('No MeetHour token found!');
     }
 
-    if (!portalId) {
+    //  Find the most recent pending record and multiples records are pending pick the latest one
+    const pendingRecord = await Token.findOne({ status: 'pending' }).sort({ createdAt: -1 });
+
+    //if not found pending record return this
+    if (!pendingRecord) {
       return res.status(400).send('Session expired! Please reinstall the app.');
     }
 
+    //  Update with MeetHour token and mark as active
     await Token.findOneAndUpdate(
-      { hubspotPortalId: portalId },
-      { meethourAccessToken: token, status: 'active' }
+
+      // pick the latest user who is in pending state
+      { hubspotPortalId: pendingRecord.hubspotPortalId },
+      //Attach MeetHour token to that same HubSpot user and mark as completed
+      {
+        meethourAccessToken: token,
+        status: 'active' // now active!
+      }
     );
 
-    console.log('✅ MeetHour token saved for portal:', portalId);
-    res.send('✅ MeetHour connected successfully! You can close this tab.');
+    //loggin
+    console.log(' MeetHour token saved for portal:', pendingRecord.hubspotPortalId);
 
+    //printing this text after successfulle connecting meethour in hubspot
+    res.send(' MeetHour connected successfully! You can close this tab.');
+
+
+    //logging the error
   } catch (err) {
     console.error('MeetHour Callback Error:', err.message);
     res.status(500).send('Something went wrong!');
   }
 });
+
+
 
 //random password generator for meeting becuase passcode is req param to create meeting in hubspot
 function generatePasscode() {
