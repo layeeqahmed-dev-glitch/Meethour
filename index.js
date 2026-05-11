@@ -348,10 +348,10 @@ app.post("/create-meeting", async (req, res) => {
     let ownerName = "Host";
     if (req.body.userId) {
       const ownerRes = await axios.get(
-        `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
+        `https://api.hubapi.com/crm/v3/owners?userId=${req.body.userId}`,
         { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
       );
-      ownerName = `${ownerRes.data.firstName} ${ownerRes.data.lastName}`;
+      ownerName = `${ownerRes.data.results[0].firstName} ${ownerRes.data.results[0].lastName}`;
     }
 
     //Meeting details that will be shown in the meetings tab in hubspot
