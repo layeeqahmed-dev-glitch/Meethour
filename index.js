@@ -345,11 +345,14 @@ app.post("/create-meeting", async (req, res) => {
     const freshHubspotToken = await refreshHubspotToken(portalId);
 
     // phir use karo
-    const ownerRes = await axios.get(
-      `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
-      { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
-    );
-    const ownerName = `${ownerRes.data.firstName} ${ownerRes.data.lastName}`;
+    let ownerName = "Host";
+    if (req.body.userId) {
+      const ownerRes = await axios.get(
+        `https://api.hubapi.com/crm/v3/owners/${req.body.userId}`,
+        { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
+      );
+      ownerName = `${ownerRes.data.firstName} ${ownerRes.data.lastName}`;
+    }
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
