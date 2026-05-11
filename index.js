@@ -72,7 +72,7 @@ app.post("/testing", async (req, res) => {
 
 //root
 app.get('/', (req, res) => {
-  res.send('Server is responding!');
+  res.send('Server is responding on meethourhubs.vercel.app !');
 });
 
 // Step 1: HubSpot OAuth Callback
@@ -309,7 +309,7 @@ app.post("/create-meeting", async (req, res) => {
 
     //these all will be sent to meethour api (schedulemeeting) to schedule meeting
     const payload = {
-      meeting_name: req.body.topic,
+      meeting_name: req.body.topic || "Demo with client",
       meeting_date,
       meeting_time,
       meeting_meridiem: meridiem,
