@@ -359,7 +359,7 @@ app.post("/create-meeting", async (req, res) => {
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
-        <b>${ownerName} is inviting you to a scheduled MeetHour meeting.</b><br>
+        <b>${ownerName} is inviting you to a scheduled meeting.</b><br>
         <b>Topic:</b> ${meeting.topic}
         <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
         <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
