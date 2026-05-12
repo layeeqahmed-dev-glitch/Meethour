@@ -166,6 +166,7 @@ app.get('/meethour-callback', async (req, res) => {
     await connectDB();
 
     const token = req.query.access_token;
+    const refreshToken = req.query.refresh_token;
 
     //if token not found throw error
     if (!token) {
@@ -188,6 +189,7 @@ app.get('/meethour-callback', async (req, res) => {
       //Attach MeetHour token to that same HubSpot user and mark as completed
       {
         meethourAccessToken: token,
+        meethourRefreshToken: refreshToken,
         status: 'active' // now active!
       }
     );
