@@ -348,9 +348,10 @@ app.post("/create-meeting", async (req, res) => {
 
     // phir use karo
     let ownerName = "Host";
-    if (req.body.userId) {
+    const idToUse = req.body.organizerUserId || req.body.userId;
+    if (idToUse) {
       const ownerRes = await axios.get(
-        `https://api.hubapi.com/crm/v3/owners?userId=${req.body.userId}`,
+        `https://api.hubapi.com/crm/v3/owners?userId=${idToUse}`,
         { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
       );
       ownerName = `${ownerRes.data.results[0].firstName} ${ownerRes.data.results[0].lastName}`;
