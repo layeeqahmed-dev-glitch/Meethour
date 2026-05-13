@@ -60,7 +60,7 @@ const refreshHubspotToken = async (portalId) => {
 // }));
 
 
-//server tesing 
+//server tesing
 app.post("/testing", async (req, res) => {
   try {
     const data = await Test.create(req.body);
@@ -120,7 +120,7 @@ app.get('/callback', async (req, res) => {
     //logging the portalID
     console.log('HubSpot token saved for portal:', portalId);
 
-    //check for hubspotPortalId if exist update it & if not create new 
+    //check for hubspotPortalId if exist update it & if not create new
     await Token.findOneAndUpdate(
       { hubspotPortalId: portalId },
       {
@@ -166,7 +166,6 @@ app.get('/meethour-callback', async (req, res) => {
     await connectDB();
 
     const token = req.query.access_token;
-    const refreshToken = req.query.refresh_token;
 
     //if token not found throw error
     if (!token) {
@@ -189,7 +188,6 @@ app.get('/meethour-callback', async (req, res) => {
       //Attach MeetHour token to that same HubSpot user and mark as completed
       {
         meethourAccessToken: token,
-        meethourRefreshToken: refreshToken,
         status: 'active' // now active!
       }
     );
@@ -270,10 +268,10 @@ app.post("/create-meeting", async (req, res) => {
       });
     }
 
-    //getting token from tokenRecord from database 
+    //getting token from tokenRecord from database
     const token = tokenRecord.meethourAccessToken;
 
-    //converting valid input (time) into js date object 
+    //converting valid input (time) into js date object
     // Convert UTC timestamp from HubSpot to JS Date object
     const start = new Date(req.body.startTime);
 
@@ -478,3 +476,4 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 module.exports = app;
+

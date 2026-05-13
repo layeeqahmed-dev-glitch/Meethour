@@ -20,8 +20,8 @@ const TokenSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'active'],  // ✅ only these 2 values allowed
-    default: 'pending'            // ✅ pending until MeetHour token arrives
+    enum: ['pending', 'active'],
+    default: 'pending'
   },
   createdAt: {
     type: Date,
