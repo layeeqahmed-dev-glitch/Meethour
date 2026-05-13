@@ -375,9 +375,17 @@ app.post("/create-meeting", async (req, res) => {
         JSON.stringify(ownerRes.data, null, 2)
       );
 
-      if (ownerRes.data.results.length > 0) {
+      const matchedOwner = ownerRes.data.results.find(
+        owner =>
+          String(owner.userId) === String(idToUse) ||
+          String(owner.userIdIncludingInactive) === String(idToUse)
+      );
+
+      console.log("MATCHED OWNER:", matchedOwner);
+
+      if (matchedOwner) {
         ownerName =
-          `${ownerRes.data.results[0].firstName} ${ownerRes.data.results[0].lastName}`;
+          `${matchedOwner.firstName || ""} ${matchedOwner.lastName || ""}`.trim();
       }
     }
 
