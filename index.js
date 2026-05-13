@@ -347,15 +347,43 @@ app.post("/create-meeting", async (req, res) => {
     const freshHubspotToken = await refreshHubspotToken(portalId);
 
     // phir use karo
+    console.log("========== OWNER DEBUG ==========");
+
+    console.log(
+      "FULL REQUEST BODY:",
+      JSON.stringify(req.body, null, 2)
+    );
+
     let ownerName = "Host";
+
     const idToUse = req.body.organizerUserId || req.body.userId;
+
+    console.log("USER ID FROM REQUEST:", idToUse);
+
     if (idToUse) {
       const ownerRes = await axios.get(
         `https://api.hubapi.com/crm/v3/owners?userId=${idToUse}`,
-        { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${freshHubspotToken}`
+          }
+        }
       );
-      ownerName = `${ownerRes.data.results[0].firstName} ${ownerRes.data.results[0].lastName}`;
+
+      console.log(
+        "OWNER API RESPONSE:",
+        JSON.stringify(ownerRes.data, null, 2)
+      );
+
+      if (ownerRes.data.results.length > 0) {
+        ownerName =
+          `${ownerRes.data.results[0].firstName} ${ownerRes.data.results[0].lastName}`;
+      }
     }
+
+    console.log("FINAL OWNER NAME:", ownerName);
+
+    console.log("========== END DEBUG ==========");
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
