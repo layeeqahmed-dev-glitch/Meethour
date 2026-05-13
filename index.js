@@ -370,11 +370,6 @@ app.post("/create-meeting", async (req, res) => {
         }
       );
 
-      console.log(
-        "OWNER API RESPONSE:",
-        JSON.stringify(ownerRes.data, null, 2)
-      );
-
       const matchedOwner = ownerRes.data.results.find(
         owner =>
           String(owner.userId) === String(idToUse) ||
