@@ -323,7 +323,6 @@ app.post("/create-meeting", async (req, res) => {
       meeting_name: req.body.topic || "Demo with client",
       meeting_date,
       meeting_time,
-      agenda: req.body.body || "",
       meeting_meridiem: meridiem,
       timezone: convertHubspotTimezone(req.body.timezone),
       passcode: generatePasscode(),
