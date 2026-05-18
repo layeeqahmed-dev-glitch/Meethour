@@ -188,7 +188,7 @@ app.get('/meethour-callback', async (req, res) => {
 
     console.log('Updating portal:', pendingRecord.hubspotPortalId);
     console.log('Token to save:', token);
-    
+
     await Token.findOneAndUpdate(
       { hubspotPortalId: pendingRecord.hubspotPortalId },
       {
@@ -277,6 +277,7 @@ app.post("/create-meeting", async (req, res) => {
     const token = tokenRecord.meethourAccessToken;
     const meethourUserEmail = tokenRecord.meethourUserEmail;
     const meethourUserName = tokenRecord.meethourUserName;
+    const meethourUserName = tokenRecord.meethourUserId;
     //converting valid input (time) into js date object
     // Convert UTC timestamp from HubSpot to JS Date object
     const start = new Date(req.body.startTime);
