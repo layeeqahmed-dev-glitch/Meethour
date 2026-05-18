@@ -316,11 +316,14 @@ app.post("/create-meeting", async (req, res) => {
         email: i.email
       }));
 
+    console.log("FULL BODY:", JSON.stringify(req.body, null, 2));
+
     //these all will be sent to meethour api (schedulemeeting) to schedule meeting
     const payload = {
       meeting_name: req.body.topic || "Demo with client",
       meeting_date,
       meeting_time,
+      agenda: req.body.body || "",
       meeting_meridiem: meridiem,
       timezone: convertHubspotTimezone(req.body.timezone),
       passcode: generatePasscode(),
@@ -328,6 +331,7 @@ app.post("/create-meeting", async (req, res) => {
       send_calendar_invite: 1,
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
     };
+    
 
     //making post req to meethour for scheduling meeting
     const response = await axios.post(
