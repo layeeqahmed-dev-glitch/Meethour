@@ -186,7 +186,9 @@ app.get('/meethour-callback', async (req, res) => {
     const meethourUserName = profileRes.data?.data?.name;
     const meethourUserId = profileRes.data?.data?.id;
 
-
+    console.log('Updating portal:', pendingRecord.hubspotPortalId);
+    console.log('Token to save:', token);
+    
     await Token.findOneAndUpdate(
       { hubspotPortalId: pendingRecord.hubspotPortalId },
       {
