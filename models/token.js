@@ -14,7 +14,15 @@ const TokenSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  meethourAccessToken: {
+  meethourUserEmail: {
+    type: String,
+    default: null
+  },
+  meethourUserId: {
+    type: String,
+    default: null
+  },
+  meethourUserName: {
     type: String,
     default: null
   },

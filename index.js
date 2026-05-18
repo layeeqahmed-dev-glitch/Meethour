@@ -14,10 +14,10 @@ const Test = require("./models/test");
 
 connectDB()
   .then(() => {
-    console.log("✅ MongoDB connected successfully (no DNS override)");
+    console.log(" MongoDB connected successfully (no DNS override)");
   })
   .catch(err => {
-    console.error('❌ MongoDB connection failed:', err);
+    console.error(' MongoDB connection failed:', err);
   });
 
 // Parse all incoming request bodies as plain text
@@ -136,7 +136,7 @@ app.get('/callback', async (req, res) => {
     );
 
     //logging that we saved token to db
-    console.log('✅ Token saved with status: pending');
+    console.log(' Token saved with status: pending');
 
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
 
@@ -158,48 +158,47 @@ app.get('/callback', async (req, res) => {
 
 // Step 2: MeetHour Callback redirect url after meethour login
 app.get('/meethour-callback', async (req, res) => {
-  //extracting the token after login
   try {
-
-    // Wait for DB to connect before doing anything else
-    // This is needed because Vercel is serverless and DB may not be connected yet
     await connectDB();
 
     const token = req.query.access_token;
 
-    //if token not found throw error
     if (!token) {
       return res.status(400).send('No MeetHour token found!');
     }
 
-    //  Find the most recent pending record and multiples records are pending pick the latest one
     const pendingRecord = await Token.findOne({ status: 'pending' }).sort({ createdAt: -1 });
 
-    //if not found pending record return this
     if (!pendingRecord) {
       return res.status(400).send('Session expired! Please reinstall the app.');
     }
 
-    //  Update with MeetHour token and mark as active
-    await Token.findOneAndUpdate(
+    // Fetch MeetHour user profile to get user ID
+    const profileRes = await axios.post(
+      'https://api.meethour.io/api/v1.2/customer/editprofile',
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      // pick the latest user who is in pending state
+    console.log('MeetHour profile:', JSON.stringify(profileRes.data, null, 2));
+
+    const meethourUserEmail = profileRes.data?.data?.email;
+
+    await Token.findOneAndUpdate(
       { hubspotPortalId: pendingRecord.hubspotPortalId },
-      //Attach MeetHour token to that same HubSpot user and mark as completed
       {
         meethourAccessToken: token,
-        status: 'active' // now active!
+        meethourUserEmail: meethourUserEmail || null,
+        meethourUserName: meethourUserName || null,
+        status: 'active'
       }
     );
 
-    //loggin
-    console.log(' MeetHour token saved for portal:', pendingRecord.hubspotPortalId);
+    console.log('MeetHour token saved for portal:', pendingRecord.hubspotPortalId);
+    console.log('MeetHour user email saved:', meethourUserEmail);
 
-    //printing this text after successfulle connecting meethour in hubspot
-    res.send(' MeetHour connected successfully! You can close this tab.');
+    res.send('MeetHour connected successfully! You can close this tab.');
 
-
-    //logging the error
   } catch (err) {
     console.error('MeetHour Callback Error:', err.message);
     res.status(500).send('Something went wrong!');
@@ -270,7 +269,8 @@ app.post("/create-meeting", async (req, res) => {
 
     //getting token from tokenRecord from database
     const token = tokenRecord.meethourAccessToken;
-
+    const meethourUserEmail = tokenRecord.meethourUserEmail;
+    const meethourUserName = tokenRecord.meethourUserName;
     //converting valid input (time) into js date object
     // Convert UTC timestamp from HubSpot to JS Date object
     const start = new Date(req.body.startTime);
@@ -318,7 +318,12 @@ app.post("/create-meeting", async (req, res) => {
       timezone: convertHubspotTimezone(req.body.timezone),
       passcode: generatePasscode(),
       attend,
-      send_calendar_invite: 1
+      send_calendar_invite: 1,
+      hostusers: meethourUserEmail ? [{
+        first_name: tokenRecord.meethourUserName || "",
+        last_name: "",
+        email: meethourUserEmail
+      }] : []
     };
 
     //making post req to meethour for scheduling meeting
@@ -408,7 +413,7 @@ app.post("/create-meeting", async (req, res) => {
       conferenceId: String(meeting.id)  // save conferenceId
     });
 
-    console.log('Meeting saved to DB! ✅');
+    console.log('Meeting saved to DB!');
 
     return res.json({
       conferenceId: meeting.id,
@@ -423,7 +428,7 @@ app.post("/create-meeting", async (req, res) => {
 
   } catch (err) {
     console.log("ERROR:", err.response?.data || err.message);
-    console.log("❌ STACK:", err.stack);
+    console.log(" STACK:", err.stack);
     return res.json({
       conferenceId: "error-" + Date.now(),
       conferenceUrl: "https://meethour.io",
@@ -446,12 +451,12 @@ app.post("/delete-meeting", async (req, res) => {
     const conferenceId = req.body.conferenceId;
 
     if (!portalId) {
-      console.log("❌ No portalId found");
+      console.log(" No portalId found");
       return res.status(400).send('Portal ID missing');
     }
 
     if (!conferenceId) {
-      console.log("❌ No conferenceId found");
+      console.log(" No conferenceId found");
       return res.status(400).send('Conference ID missing');
     }
 
@@ -459,7 +464,7 @@ app.post("/delete-meeting", async (req, res) => {
     const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
 
     if (!tokenRecord || !tokenRecord.meethourAccessToken) {
-      console.log("❌ No MeetHour token found for portal:", portalId);
+      console.log(" No MeetHour token found for portal:", portalId);
       return res.status(400).send('MeetHour not connected for this account');
     }
     const token = tokenRecord.meethourAccessToken;
@@ -468,7 +473,7 @@ app.post("/delete-meeting", async (req, res) => {
     const meetingRecord = await Meeting.findOne({ conferenceId: String(conferenceId) });
 
     if (!meetingRecord) {
-      console.log("❌ Meeting not found in DB");
+      console.log(" Meeting not found in DB");
       return res.status(404).send('Meeting not found');
     }
 
@@ -486,16 +491,16 @@ app.post("/delete-meeting", async (req, res) => {
       }
     );
 
-    console.log("✅ Meeting deleted from MeetHour:", response.data);
+    console.log(" Meeting deleted from MeetHour:", response.data);
 
     // Delete from DB
     await Meeting.findOneAndDelete({ conferenceId: String(conferenceId) });
-    console.log("✅ Meeting deleted from DB!");
+    console.log(" Meeting deleted from DB!");
 
     return res.status(200).send('Meeting deleted successfully!');
 
   } catch (err) {
-    console.error("❌ Delete Meeting Error:", err.response?.data || err.message);
+    console.error(" Delete Meeting Error:", err.response?.data || err.message);
     return res.status(500).send('Something went wrong!');
   }
 });
@@ -507,4 +512,3 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 module.exports = app;
-
