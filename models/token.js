@@ -26,6 +26,10 @@ const TokenSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  meethourUserId: { 
+    type: String,
+    default: null 
+  },
   status: {
     type: String,
     enum: ['pending', 'active'],

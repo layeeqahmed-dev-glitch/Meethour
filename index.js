@@ -175,7 +175,7 @@ app.get('/meethour-callback', async (req, res) => {
 
     // Fetch MeetHour user profile to get user ID
     const profileRes = await axios.post(
-      'https://api.meethour.io/api/v1.2/customer/editprofile',
+      'https://api.meethour.io/api/v1.2/customer/user_details',
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -183,6 +183,9 @@ app.get('/meethour-callback', async (req, res) => {
     console.log('MeetHour profile:', JSON.stringify(profileRes.data, null, 2));
 
     const meethourUserEmail = profileRes.data?.data?.email;
+    const meethourUserName = profileRes.data?.data?.name;
+    const meethourUserId = profileRes.data?.data?.id;
+
 
     await Token.findOneAndUpdate(
       { hubspotPortalId: pendingRecord.hubspotPortalId },
@@ -190,6 +193,7 @@ app.get('/meethour-callback', async (req, res) => {
         meethourAccessToken: token,
         meethourUserEmail: meethourUserEmail || null,
         meethourUserName: meethourUserName || null,
+        meethourUserId: meethourUserId || null,
         status: 'active'
       }
     );
@@ -319,11 +323,7 @@ app.post("/create-meeting", async (req, res) => {
       passcode: generatePasscode(),
       attend,
       send_calendar_invite: 1,
-      hostusers: meethourUserEmail ? [{
-        first_name: tokenRecord.meethourUserName || "",
-        last_name: "",
-        email: meethourUserEmail
-      }] : []
+      hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
     };
 
     //making post req to meethour for scheduling meeting
