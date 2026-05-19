@@ -624,6 +624,11 @@ app.post('/deal-webhook', async (req, res) => {
       const dealName = deal.properties.dealname;
       const ownerId = deal.properties.hubspot_owner_id;
 
+      console.log('Raw meeting_date from deal:', deal.properties.meeting_date);
+      console.log('Raw meeting_time from deal:', deal.properties.meeting_time);
+      console.log('Raw meeting_meridiem from deal:', deal.properties.meeting_meridiem);
+      console.log('Raw timezone from deal:', deal.properties.timezone);
+
       const contactId = deal.associations?.contacts?.results?.[0]?.id;
       if (!contactId) {
         console.log('No contact associated with deal');
