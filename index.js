@@ -138,6 +138,28 @@ app.get('/callback', async (req, res) => {
     //logging that we saved token to db
     console.log(' Token saved with status: pending');
 
+    async function subscribeWebhook(hubspotAccessToken, portalId) {
+      try {
+        await axios.post(
+          `https://api.hubapi.com/webhooks/v3/${process.env.HUBSPOT_APP_ID}/subscriptions`,
+          {
+            eventType: "deal.propertyChange",
+            propertyName: "dealstage",
+            active: true
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${hubspotAccessToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+        console.log('Webhook subscribed for portal:', portalId);
+      } catch (err) {
+        console.log('Webhook already subscribed or error:', err.response?.data);
+      }
+    }
+
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
 
     //redirecting to meethour service login page to get access token for creating meeting on that account
@@ -316,8 +338,6 @@ app.post("/create-meeting", async (req, res) => {
         email: i.email
       }));
 
-    console.log("FULL BODY:", JSON.stringify(req.body, null, 2));
-
     //these all will be sent to meethour api (schedulemeeting) to schedule meeting
     const payload = {
       meeting_name: req.body.topic || "Demo with client",
@@ -330,7 +350,7 @@ app.post("/create-meeting", async (req, res) => {
       send_calendar_invite: 1,
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
     };
-    
+
 
     //making post req to meethour for scheduling meeting
     const response = await axios.post(
@@ -401,7 +421,7 @@ app.post("/create-meeting", async (req, res) => {
 
     //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
-        <b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+        <b>${ownerName} is inviting you to a scheduled meeting.</b>
         <b>Topic:</b> ${meeting.topic}
         <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
         <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
@@ -508,6 +528,186 @@ app.post("/delete-meeting", async (req, res) => {
   } catch (err) {
     console.error(" Delete Meeting Error:", err.response?.data || err.message);
     return res.status(500).send('Something went wrong!');
+  }
+});
+
+
+//deal-stage
+app.post('/deal-webhook', async (req, res) => {
+  try {
+    res.sendStatus(200);
+
+    await connectDB();
+
+    const events = req.body;
+    if (!Array.isArray(events)) return;
+
+    for (const event of events) {
+      const { subscriptionType, portalId, objectId, propertyValue } = event;
+
+      if (subscriptionType !== 'deal.propertyChange') continue;
+
+      console.log(`Deal ${objectId} stage changed to: ${propertyValue} for portal: ${portalId}`);
+
+      const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
+      if (!tokenRecord || !tokenRecord.meethourAccessToken) {
+        console.log('No token found for portal:', portalId);
+        continue;
+      }
+
+      const hubspotToken = await refreshHubspotToken(portalId);
+
+      // match stage label dynamically (works for all customers)
+      const pipelineRes = await axios.get(
+        'https://api.hubapi.com/crm/v3/pipelines/deals',
+        { headers: { Authorization: `Bearer ${hubspotToken}` } }
+      );
+
+      const TRIGGER_LABELS = ['appointment scheduled', 'presentation scheduled'];
+      let triggerStageIds = [];
+
+      for (const pipeline of pipelineRes.data.results) {
+        for (const stage of pipeline.stages) {
+          if (TRIGGER_LABELS.includes(stage.label.toLowerCase())) {
+            triggerStageIds.push(stage.id);
+          }
+        }
+      }
+
+      console.log('Trigger stage IDs:', triggerStageIds);
+
+      if (!triggerStageIds.includes(propertyValue)) {
+        console.log('Stage not matched, skipping');
+        continue;
+      }
+
+      // fetch deal with custom properties
+      const dealRes = await axios.get(
+        `https://api.hubapi.com/crm/v3/objects/deals/${objectId}?associations=contacts&properties=dealname,dealstage,hubspot_owner_id,meeting_date,meeting_meridiem,meeting_time,timezone`,
+        { headers: { Authorization: `Bearer ${hubspotToken}` } }
+      );
+
+      const deal = dealRes.data;
+      const dealName = deal.properties.dealname;
+      const ownerId = deal.properties.hubspot_owner_id;
+
+      // get associated contact
+      const contactId = deal.associations?.contacts?.results?.[0]?.id;
+      if (!contactId) {
+        console.log('No contact associated with deal');
+        continue;
+      }
+
+      const contactRes = await axios.get(
+        `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=email,firstname,lastname`,
+        { headers: { Authorization: `Bearer ${hubspotToken}` } }
+      );
+      const contact = contactRes.data.properties;
+
+      // get owner name
+      let ownerName = 'Host';
+      if (ownerId) {
+        const ownerRes = await axios.get(
+          `https://api.hubapi.com/crm/v3/owners/${ownerId}`,
+          { headers: { Authorization: `Bearer ${hubspotToken}` } }
+        );
+        const owner = ownerRes.data;
+        ownerName = `${owner.firstName || ''} ${owner.lastName || ''}`.trim();
+      }
+      console.log('Owner name:', ownerName);
+
+      // transform meeting_date ms → YYYY-MM-DD
+      const rawDate = new Date(Number(deal.properties.meeting_date));
+      const meeting_date = `${rawDate.getFullYear()}-${String(rawDate.getMonth() + 1).padStart(2, '0')}-${String(rawDate.getDate()).padStart(2, '0')}`;
+
+      // transform meeting_time to 12hr padded HH:MM
+      const [rawHr, rawMin] = deal.properties.meeting_time.split(':');
+      let hr = Number(rawHr) % 12 || 12;
+      const meeting_time = `${String(hr).padStart(2, '0')}:${String(rawMin).padStart(2, '0')}`;
+
+      const meeting_meridiem = deal.properties.meeting_meridiem;
+      const timezone = deal.properties.timezone;
+
+      console.log('meeting_date:', meeting_date);
+      console.log('meeting_time:', meeting_time, meeting_meridiem);
+      console.log('timezone:', timezone);
+
+      // create MeetHour meeting
+      const meetingPayload = {
+        meeting_name: dealName || 'Demo Call',
+        meeting_date,
+        meeting_time,
+        meeting_meridiem,
+        timezone,
+        passcode: generatePasscode(),
+        attend: [{
+          first_name: contact.firstname || '',
+          last_name: contact.lastname || '',
+          email: contact.email
+        }],
+        hostusers: tokenRecord.meethourUserId ? [Number(tokenRecord.meethourUserId)] : [],
+        send_calendar_invite: 1
+      };
+
+      const meetingRes = await axios.post(
+        'https://api.meethour.io/api/v1.2/meeting/schedulemeeting',
+        meetingPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const meeting = meetingRes.data.data;
+      console.log('Meeting created:', meeting.joinURL);
+
+      // save to DB same as /create-meeting
+      await Meeting.create({
+        hubspotMeetingId: `${portalId}-${objectId}-${Date.now()}`,
+        hubspotPortalId: String(portalId),
+        meethourMeetingId: meeting.meeting_id,
+        meethourMeetingUrl: meeting.joinURL,
+        meetingName: dealName || 'Demo Call',
+        conferenceId: String(meeting.id)
+      });
+      console.log('Meeting saved to DB!');
+
+      // timeline note same format as /create-meeting
+      const formattedTime = `${meeting_time} ${meeting_meridiem} (${timezone})`;
+      const noteBody = `
+        <b>${ownerName} is inviting you to a scheduled meeting.</b>
+        <b>Topic:</b> ${meeting.topic}
+        <b>Time:</b> ${formattedTime}<br>
+        <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
+        <b>Meeting ID:</b> ${meeting.meeting_id}
+        <b>Passcode:</b> ${meeting.passcode}
+      `;
+
+      await axios.post(
+        'https://api.hubapi.com/crm/v3/objects/notes',
+        {
+          properties: {
+            hs_note_body: noteBody,
+            hs_timestamp: Date.now()
+          },
+          associations: [
+            { to: { id: contactId }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }] },
+            { to: { id: objectId }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 214 }] }
+          ]
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${hubspotToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log('Timeline note logged for deal:', objectId);
+    }
+  } catch (err) {
+    console.error('Deal webhook error:', err.response?.data || err.message);
   }
 });
 
