@@ -119,6 +119,27 @@ app.get('/callback', async (req, res) => {
 
     console.log('Token saved with status: pending');
 
+    // create property group first
+    try {
+      await axios.post(
+        'https://api.hubapi.com/crm/v3/properties/deals/groups',
+        {
+          name: 'meethour_automation',
+          label: 'Meet Hour Automation',
+          displayOrder: 1
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${hubspotAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log('Property group created');
+    } catch (err) {
+      console.log('Group skipped (may exist):', err.response?.data?.message);
+    }
+
     // create deal properties in customer's HubSpot account
     const properties = [
       {
@@ -126,21 +147,21 @@ app.get('/callback', async (req, res) => {
         label: 'Meeting Date',
         type: 'date',
         fieldType: 'date',
-        groupName: 'dealinformation'
+        groupName: 'meethour_automation'
       },
       {
         name: 'meeting_time',
         label: 'Meeting Time',
         type: 'string',
         fieldType: 'text',
-        groupName: 'dealinformation'
+        groupName: 'meethour_automation'
       },
       {
         name: 'meeting_meridiem',
         label: 'Meeting Meridiem',
         type: 'enumeration',
         fieldType: 'select',
-        groupName: 'dealinformation',
+        groupName: 'meethour_automation',
         options: [
           { label: 'AM', value: 'AM', displayOrder: 0 },
           { label: 'PM', value: 'PM', displayOrder: 1 }
@@ -151,7 +172,7 @@ app.get('/callback', async (req, res) => {
         label: 'Timezone',
         type: 'string',
         fieldType: 'text',
-        groupName: 'dealinformation'
+        groupName: 'meethour_automation'
       }
     ];
 
