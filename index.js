@@ -23,6 +23,7 @@ connectDB()
 // Parse all incoming request bodies as plain text
 app.use(express.text({ type: "*/*" }));
 
+console.log('Calling refreshHubspotToken...');
 //hubspot token refresh function
 const refreshHubspotToken = async (portalId) => {
 const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
@@ -582,6 +583,7 @@ app.post('/deal-webhook', async (req, res) => {
 
       console.log(`Deal ${objectId} stage changed to: ${propertyValue} for portal: ${portalId}`);
 
+    console.log('tokenRecord:', tokenRecord ? 'found' : 'NOT FOUND');
       const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
       if (!tokenRecord || !tokenRecord.meethourAccessToken) {
         console.log('No token found for portal:', portalId);
