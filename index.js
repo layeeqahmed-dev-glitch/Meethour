@@ -569,7 +569,7 @@ app.post("/delete-meeting", async (req, res) => {
 //deal-stage
 app.post('/deal-webhook', async (req, res) => {
   try {
-    res.sendStatus(200);
+    
 
     await connectDB();
 
