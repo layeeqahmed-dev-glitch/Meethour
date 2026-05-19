@@ -652,8 +652,7 @@ app.post('/deal-webhook', async (req, res) => {
       }
       console.log('Owner name:', ownerName);
 
-      const rawDate = new Date(Number(deal.properties.meeting_date));
-      const meeting_date = `${rawDate.getFullYear()}-${String(rawDate.getMonth() + 1).padStart(2, '0')}-${String(rawDate.getDate()).padStart(2, '0')}`;
+      const meeting_date = deal.properties.meeting_date; 
 
       const [rawHr, rawMin] = deal.properties.meeting_time.split(':');
       let hr = Number(rawHr) % 12 || 12;
