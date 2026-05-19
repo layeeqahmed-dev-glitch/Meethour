@@ -709,14 +709,13 @@ app.post('/deal-webhook', async (req, res) => {
       console.log('Meeting saved to DB!');
 
       const formattedTime = `${meeting_time} ${meeting_meridiem} (${timezone})`;
-      const noteBody = `
-        <b>${ownerName} is inviting you to a scheduled meeting.</b>
-        <b>Topic:</b> ${meeting.topic}
-        <b>Time:</b> ${formattedTime}<br>
-        <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
-        <b>Meeting ID:</b> ${meeting.meeting_id}
-        <b>Passcode:</b> ${meeting.passcode}
-      `;
+      const noteBody =
+        `${ownerName} is inviting you to a scheduled meeting.\n` +
+        `Topic: ${meeting.topic}\n` +
+        `Time: ${formattedTime}\n` +
+        `Join MeetHour Meeting: ${meeting.joinURL}\n` +
+        `Meeting ID: ${meeting.meeting_id}\n` +
+        `Passcode: ${meeting.passcode}`;
 
       await axios.post(
         'https://api.hubapi.com/crm/v3/objects/notes',
