@@ -15,7 +15,8 @@
         "crm.objects.contacts.read",
         "crm.objects.contacts.write",
         "crm.objects.owners.read",
-        "crm.objects.deals.read"
+        "crm.objects.deals.read",
+        "crm.schemas.deals.write"
       ],
       "optionalScopes": [],
       "conditionallyRequiredScopes": []

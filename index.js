@@ -596,7 +596,7 @@ app.post('/deal-webhook', async (req, res) => {
         { headers: { Authorization: `Bearer ${hubspotToken}` } }
       );
 
-      const TRIGGER_LABELS = ['appointment scheduled', 'presentation scheduled'];
+      const TRIGGER_LABELS = ['appointmentscheduled', 'presentationscheduled'];
       let triggerStageIds = [];
 
       for (const pipeline of pipelineRes.data.results) {
