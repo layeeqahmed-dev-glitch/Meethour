@@ -25,7 +25,7 @@ app.use(express.text({ type: "*/*" }));
 
 //hubspot token refresh function
 const refreshHubspotToken = async (portalId) => {
-  const tokenRecord = await Token.findOne({ hubspotPortalId: portalId });
+const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
 
   const response = await axios.post(
     "https://api.hubapi.com/oauth/v1/token",
