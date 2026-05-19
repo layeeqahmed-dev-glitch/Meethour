@@ -78,20 +78,14 @@ app.get('/', (req, res) => {
 // Step 1: HubSpot OAuth Callback
 app.get('/callback', async (req, res) => {
   try {
-
-    //to get code from url
     const code = req.query.code;
 
-    //if no code throw err
     if (!code) {
       return res.status(400).send('No code provided!');
     }
 
-    // Wait for DB to connect before doing anything else
-    // This is needed because Vercel is serverless and DB may not be connected yet
     await connectDB();
 
-    //taking the code from callback and exchanging to this api (code to get hubspot token)  
     const tokenResponse = await axios.post(
       'https://api.hubapi.com/oauth/v1/token',
       qs.stringify({
@@ -101,73 +95,90 @@ app.get('/callback', async (req, res) => {
         redirect_uri: process.env.HUBSPOT_REDIRECT_URI,
         code: code
       }),
-      //data type format
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
-    //extracting the access token from the API response
     const hubspotAccessToken = tokenResponse.data.access_token;
-
-    //extracting the refresh token from the API response
     const hubspotRefreshToken = tokenResponse.data.refresh_token;
 
-    //post request to fetch HubSpot portal info from access token
     const portalRes = await axios.get(`https://api.hubapi.com/oauth/v1/access-tokens/${hubspotAccessToken}`);
-
-    // Getting HubSpot portal ID from access token
     const portalId = portalRes.data.hub_id;
 
-    //logging the portalID
     console.log('HubSpot token saved for portal:', portalId);
 
-    //check for hubspotPortalId if exist update it & if not create new
     await Token.findOneAndUpdate(
       { hubspotPortalId: portalId },
       {
-        //declaring the variable for storing token in db
         hubspotAccessToken,
-        //declaring the variable for storing refresh token in db
         hubspotRefreshToken,
-        //clearing old meethour token so status can reset to pending on reinstall
         meethourAccessToken: null,
         status: 'pending'
       },
       { upsert: true, new: true }
     );
 
-    //logging that we saved token to db
-    console.log(' Token saved with status: pending');
+    console.log('Token saved with status: pending');
 
-    async function subscribeWebhook(hubspotAccessToken, portalId) {
+    // create deal properties in customer's HubSpot account
+    const properties = [
+      {
+        name: 'meeting_date',
+        label: 'Meeting Date',
+        type: 'date',
+        fieldType: 'date',
+        groupName: 'dealinformation'
+      },
+      {
+        name: 'meeting_time',
+        label: 'Meeting Time',
+        type: 'string',
+        fieldType: 'text',
+        groupName: 'dealinformation'
+      },
+      {
+        name: 'meeting_meridiem',
+        label: 'Meeting Meridiem',
+        type: 'enumeration',
+        fieldType: 'select',
+        groupName: 'dealinformation',
+        options: [
+          { label: 'AM', value: 'AM', displayOrder: 0 },
+          { label: 'PM', value: 'PM', displayOrder: 1 }
+        ]
+      },
+      {
+        name: 'timezone',
+        label: 'Timezone',
+        type: 'string',
+        fieldType: 'text',
+        groupName: 'dealinformation'
+      }
+    ];
+
+    for (const prop of properties) {
       try {
         await axios.post(
-          `https://api.hubapi.com/webhooks/v3/${process.env.HUBSPOT_APP_ID}/subscriptions`,
-          {
-            eventType: "deal.propertyChange",
-            propertyName: "dealstage",
-            active: true
-          },
+          'https://api.hubapi.com/crm/v3/properties/deals',
+          prop,
           {
             headers: {
               Authorization: `Bearer ${hubspotAccessToken}`,
-              "Content-Type": "application/json"
+              'Content-Type': 'application/json'
             }
           }
         );
-        console.log('Webhook subscribed for portal:', portalId);
+        console.log('Property created:', prop.name);
       } catch (err) {
-        console.log('Webhook already subscribed or error:', err.response?.data);
+        console.log('Property skipped (may exist):', prop.name, err.response?.data?.message);
       }
     }
 
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
 
-    //redirecting to meethour service login page to get access token for creating meeting on that account
     res.redirect(
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`
     );
 
-    //if anything fails log that error
   } catch (err) {
     console.error('OAuth Error Details:', {
       message: err.message,
@@ -177,6 +188,7 @@ app.get('/callback', async (req, res) => {
     res.status(500).send(`Installation failed! ${err.message}`);
   }
 });
+
 
 // Step 2: MeetHour Callback redirect url after meethour login
 app.get('/meethour-callback', async (req, res) => {

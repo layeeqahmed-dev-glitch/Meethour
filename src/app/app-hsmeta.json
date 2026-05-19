@@ -14,7 +14,8 @@
         "oauth",
         "crm.objects.contacts.read",
         "crm.objects.contacts.write",
-        "crm.objects.owners.read"
+        "crm.objects.owners.read",
+        "crm.objects.deals.read"
       ],
       "optionalScopes": [],
       "conditionallyRequiredScopes": []
