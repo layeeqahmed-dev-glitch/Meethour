@@ -709,8 +709,8 @@ app.post('/deal-webhook', async (req, res) => {
       console.log('Meeting saved to DB!');
 
       const formattedTime = `${meeting_time} ${meeting_meridiem} (${timezone})`;
-      const noteBody = `
-        <b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+      const noteBody = `<br><br>
+        <b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
         <b>Topic:</b> ${meeting.topic}</br>
         <b>Time:</b> ${formattedTime}</br>
         <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
