@@ -750,64 +750,73 @@ app.post('/deal-webhook', async (req, res) => {
 
 
 //update meeting
+
 app.post("/update-meeting", async (req, res) => {
   try {
-    console.log("------ UPDATE MEETING REQUEST ------");
+    console.log("========== UPDATE MEETING ==========");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
     await connectDB();
 
-    const portalId = req.body.portalId;
-    const conferenceId = req.body.conferenceId;
+    const { portalId, conferenceId, topic, startTime, timezone } = req.body;
 
-    if (!portalId) {
-      console.log("ERROR: No portalId found");
-      return res.json({ success: false, message: "Portal ID missing" });
+    if (!portalId || !conferenceId) {
+      console.log("portalId or conferenceId missing");
+      return res.sendStatus(400);
     }
 
-    if (!conferenceId) {
-      console.log("ERROR: No conferenceId found");
-      return res.json({ success: false, message: "Conference ID missing" });
+    const tokenRecord = await Token.findOne({
+      hubspotPortalId: String(portalId),
+    });
+
+    if (!tokenRecord?.meethourAccessToken) {
+      console.log("MeetHour token not found");
+      return res.sendStatus(404);
     }
 
-    const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
-    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
-      console.log("ERROR: No MeetHour token found for portal:", portalId);
-      return res.json({ success: false, message: "MeetHour not connected" });
-    }
+    const meetingRecord = await Meeting.findOne({
+      conferenceId: String(conferenceId),
+    });
 
-    const meetingRecord = await Meeting.findOne({ conferenceId: String(conferenceId) });
     if (!meetingRecord) {
-      console.log("ERROR: Meeting not found in DB for conferenceId:", conferenceId);
-      return res.json({ success: false, message: "Meeting not found" });
+      console.log("Meeting not found");
+      return res.sendStatus(404);
     }
 
-    console.log("Meeting found in DB:", meetingRecord.meethourMeetingId);
+    const start = new Date(startTime);
 
-    const start = new Date(req.body.startTime);
-    const istDate = new Date(start.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const istDate = new Date(
+      start.toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata",
+      })
+    );
 
-    const meeting_date = `${istDate.getFullYear()}-${String(istDate.getMonth()+1).padStart(2,'0')}-${String(istDate.getDate()).padStart(2,'0')}`;
+    const meeting_date = `${istDate.getFullYear()}-${String(
+      istDate.getMonth() + 1
+    ).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
+
     let hours = istDate.getHours();
-    const minutes = istDate.getMinutes();
-    const meeting_meridiem = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    const meeting_time = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
 
-    console.log("meeting_date:", meeting_date);
-    console.log("meeting_time:", meeting_time, meeting_meridiem);
-    console.log("timezone:", req.body.timezone);
+    const minutes = istDate.getMinutes();
+
+    const meeting_meridiem = hours >= 12 ? "PM" : "AM";
+
+    hours = hours % 12 || 12;
+
+    const meeting_time = `${String(hours).padStart(2, "0")}:${String(
+      minutes
+    ).padStart(2, "0")}`;
 
     const editPayload = {
       meeting_id: meetingRecord.meethourMeetingId,
-      meeting_name: req.body.topic || meetingRecord.meetingName,
+      meeting_name: topic || meetingRecord.meetingName,
       meeting_date,
       meeting_time,
       meeting_meridiem,
-      timezone: convertHubspotTimezone(req.body.timezone)
+      timezone: convertHubspotTimezone(timezone),
     };
 
-    console.log("MeetHour edit payload:", JSON.stringify(editPayload, null, 2));
+    console.log("EDIT PAYLOAD:", editPayload);
 
     const response = await axios.post(
       "https://api.meethour.io/api/v1.2/meeting/editmeeting",
@@ -815,26 +824,28 @@ app.post("/update-meeting", async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
-    console.log("MeetHour edit response:", JSON.stringify(response.data, null, 2));
+    console.log("MEETHOUR RESPONSE:", response.data);
 
     await Meeting.findOneAndUpdate(
       { conferenceId: String(conferenceId) },
-      { meetingName: req.body.topic || meetingRecord.meetingName }
+      {
+        meetingName: topic || meetingRecord.meetingName,
+      }
     );
 
-    console.log("Meeting updated in DB!");
-
-    return res.json({ success: true });
-
+    return res.sendStatus(204);
   } catch (err) {
-    console.error("Update Meeting Error:", err.response?.data || err.message);
-    console.error("STACK:", err.stack);
-    return res.json({ success: false, message: "Something went wrong" });
+    console.error(
+      "UPDATE ERROR:",
+      err.response?.data || err.message
+    );
+
+    return res.sendStatus(500);
   }
 });
 
