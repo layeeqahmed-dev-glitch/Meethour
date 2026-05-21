@@ -1,33 +1,33 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const MeetingSchema = new mongoose.Schema({
   hubspotMeetingId: {
     type: String,
-    required: true
+    required: true,
   },
   hubspotPortalId: {
     type: String,
-    required: true
+    required: true,
   },
   meethourMeetingId: {
     type: String,
-    required: true
+    required: true,
   },
-  meethourMeetingUrl: {a
+  meethourMeetingUrl: {
     type: String,
-    required: true
+    required: true,
   },
   meetingName: {
-    type: String
+    type: String,
   },
   conferenceId: {
     type: String,
-    default: null
+    default: null,
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model('Meeting', MeetingSchema);
+module.exports = mongoose.model("Meeting", MeetingSchema);
