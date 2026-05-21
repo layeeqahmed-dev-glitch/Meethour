@@ -13,7 +13,7 @@ const MeetingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  meethourMeetingUrl: {
+  meethourMeetingUrl: {a
     type: String,
     required: true
   },

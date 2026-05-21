@@ -13,6 +13,13 @@
           "propertyName": "dealstage",
           "active": true
         }
+      ],
+      "crmObjects": [
+        {
+          "subscriptionType": "object.propertyChange",
+          "objectType": "meeting",
+          "active": true
+        }
       ]
     }
   }
