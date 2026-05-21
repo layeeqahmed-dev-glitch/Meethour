@@ -751,6 +751,7 @@ app.post('/deal-webhook', async (req, res) => {
 
 //update meeting
 
+
 app.post("/update-meeting", async (req, res) => {
   try {
     console.log("========== UPDATE MEETING ==========");
@@ -758,10 +759,15 @@ app.post("/update-meeting", async (req, res) => {
 
     await connectDB();
 
-    const { portalId, conferenceId, topic, startTime, timezone } = req.body;
+    const {
+      portalId,
+      conferenceId,
+      topic,
+      startTime,
+      timezone,
+    } = req.body;
 
     if (!portalId || !conferenceId) {
-      console.log("portalId or conferenceId missing");
       return res.sendStatus(400);
     }
 
@@ -770,7 +776,6 @@ app.post("/update-meeting", async (req, res) => {
     });
 
     if (!tokenRecord?.meethourAccessToken) {
-      console.log("MeetHour token not found");
       return res.sendStatus(404);
     }
 
@@ -779,44 +784,61 @@ app.post("/update-meeting", async (req, res) => {
     });
 
     if (!meetingRecord) {
-      console.log("Meeting not found");
       return res.sendStatus(404);
     }
 
-    const start = new Date(startTime);
-
-    const istDate = new Date(
-      start.toLocaleString("en-US", {
-        timeZone: "Asia/Kolkata",
-      })
-    );
-
-    const meeting_date = `${istDate.getFullYear()}-${String(
-      istDate.getMonth() + 1
-    ).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
-
-    let hours = istDate.getHours();
-
-    const minutes = istDate.getMinutes();
-
-    const meeting_meridiem = hours >= 12 ? "PM" : "AM";
-
-    hours = hours % 12 || 12;
-
-    const meeting_time = `${String(hours).padStart(2, "0")}:${String(
-      minutes
-    ).padStart(2, "0")}`;
-
+    // base payload
     const editPayload = {
       meeting_id: meetingRecord.meethourMeetingId,
-      meeting_name: topic || meetingRecord.meetingName,
-      meeting_date,
-      meeting_time,
-      meeting_meridiem,
-      timezone: convertHubspotTimezone(timezone),
     };
 
-    console.log("EDIT PAYLOAD:", editPayload);
+    // topic changed
+    if (topic) {
+      editPayload.meeting_name = topic;
+    }
+
+    // date/time changed
+    if (startTime) {
+      const start = new Date(startTime);
+
+      const istDate = new Date(
+        start.toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata",
+        })
+      );
+
+      const meeting_date = `${istDate.getFullYear()}-${String(
+        istDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
+
+      let hours = istDate.getHours();
+
+      const minutes = istDate.getMinutes();
+
+      const meeting_meridiem =
+        hours >= 12 ? "PM" : "AM";
+
+      hours = hours % 12 || 12;
+
+      const meeting_time = `${String(hours).padStart(
+        2,
+        "0"
+      )}:${String(minutes).padStart(2, "0")}`;
+
+      editPayload.meeting_date = meeting_date;
+      editPayload.meeting_time = meeting_time;
+      editPayload.meeting_meridiem = meeting_meridiem;
+
+      if (timezone) {
+        editPayload.timezone =
+          convertHubspotTimezone(timezone);
+      }
+    }
+
+    console.log(
+      "EDIT PAYLOAD:",
+      JSON.stringify(editPayload, null, 2)
+    );
 
     const response = await axios.post(
       "https://api.meethour.io/api/v1.2/meeting/editmeeting",
@@ -829,13 +851,23 @@ app.post("/update-meeting", async (req, res) => {
       }
     );
 
-    console.log("MEETHOUR RESPONSE:", response.data);
+    console.log(
+      "MEETHOUR RESPONSE:",
+      JSON.stringify(response.data, null, 2)
+    );
+
+    // DB update
+    const updateData = {};
+
+    if (topic) {
+      updateData.meetingName = topic;
+    }
 
     await Meeting.findOneAndUpdate(
-      { conferenceId: String(conferenceId) },
       {
-        meetingName: topic || meetingRecord.meetingName,
-      }
+        conferenceId: String(conferenceId),
+      },
+      updateData
     );
 
     return res.sendStatus(204);
