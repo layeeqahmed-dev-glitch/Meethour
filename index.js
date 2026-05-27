@@ -912,8 +912,10 @@ app.post('/deal-webhook', async (req, res) => {
         send_calendar_invite: 1
       };
 
+
       const meetingRes = await axios.post(
         'https://api.meethour.io/api/v1.2/meeting/schedulemeeting',
+        
         meetingPayload,
         {
           headers: {
@@ -922,8 +924,9 @@ app.post('/deal-webhook', async (req, res) => {
           }
         }
       );
+      console.log('MeetHour raw:', JSON.stringify(meetingRes.data, null, 2));
 
-      const meeting = meetingRes.data.data || meetingRes.data;
+      const meeting = meetingRes.data.data;
       console.log('Meeting created:', meeting.joinURL);
 
       await Meeting.create({
