@@ -953,11 +953,9 @@ app.post('/deal-webhook', async (req, res) => {
             dealIds: [Number(objectId)]
           },
           metadata: {
-            body: `Join MeetHour: ${meeting.joinURL}\nMeeting ID: ${meeting.meeting_id}\nPasscode: ${meeting.passcode}`,
-            startTime: startTimestamp || Date.now(),
-            endTime: (startTimestamp || Date.now()) + 3600000,
-            title: meeting.topic || dealName || 'Demo Call',
-            externalUrl: meeting.joinURL
+            metadata: {
+              body: `${ownerName} is inviting you to a scheduled meeting.\nTopic: ${meeting.topic}\nTime: ${formattedTime}\nJoin MeetHour: ${meeting.joinURL}\nMeeting ID: ${meeting.meeting_id}\nPasscode: ${meeting.passcode}`
+            }
           }
         },
         {
