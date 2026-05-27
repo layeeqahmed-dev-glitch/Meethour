@@ -923,7 +923,7 @@ app.post('/deal-webhook', async (req, res) => {
         }
       );
 
-      const meeting = meetingRes.data.data;
+      const meeting = meetingRes.data.data || meetingRes.data;
       console.log('Meeting created:', meeting.joinURL);
 
       await Meeting.create({
