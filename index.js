@@ -937,6 +937,7 @@ app.post('/deal-webhook', async (req, res) => {
       console.log('Meeting saved to DB!');
 
       // CHANGE 2 & 3: log as engagement type MEETING so it shows in HubSpot Meetings tab
+      const formattedTime = `${meeting_time} ${meeting_meridiem} (${timezone})`;
       const startTimestamp = new Date(`${meeting_date} ${meeting_time} ${meeting_meridiem}`).getTime();
 
       await axios.post(
