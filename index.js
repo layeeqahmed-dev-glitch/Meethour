@@ -125,8 +125,8 @@ app.get('/callback', async (req, res) => {
       await axios.post(
         'https://api.hubapi.com/crm/v3/properties/deals/groups',
         {
-          name: 'Meet Hour',
-          label: 'Meet Hour Automation',
+          name: 'meet_hour',
+          label: 'Meet Hour',
           displayOrder: 1
         },
         {
@@ -148,14 +148,14 @@ app.get('/callback', async (req, res) => {
         label: 'Meeting Date',
         type: 'date',
         fieldType: 'date',
-        groupName: 'Meet Hour'
+        groupName: 'meet_hour'
       },
       {
         name: 'meeting_time',
         label: 'Meeting Time',
         type: 'enumeration',
         fieldType: 'select',
-        groupName: 'Meet Hour',
+        groupName: 'meet_hour',
         options: [
           { label: '12:00', value: '12:00', displayOrder: 0 },
           { label: '12:15', value: '12:15', displayOrder: 1 },
@@ -212,7 +212,7 @@ app.get('/callback', async (req, res) => {
         label: 'Meeting Meridiem',
         type: 'enumeration',
         fieldType: 'select',
-        groupName: 'Meet Hour',
+        groupName: 'meet_hour',
         options: [
           { label: 'AM', value: 'AM', displayOrder: 0 },
           { label: 'PM', value: 'PM', displayOrder: 1 }
