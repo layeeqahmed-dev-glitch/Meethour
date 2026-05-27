@@ -954,9 +954,7 @@ app.post('/deal-webhook', async (req, res) => {
             dealIds: [Number(objectId)]
           },
           metadata: {
-            metadata: {
-              body: `${ownerName} is inviting you to a scheduled meeting.\nTopic: ${meeting.topic}\nTime: ${formattedTime}\nJoin MeetHour: ${meeting.joinURL}\nMeeting ID: ${meeting.meeting_id}\nPasscode: ${meeting.passcode}`
-            }
+            body: `${ownerName} is inviting you to a scheduled meeting.\nTopic: ${meeting.topic}\nTime: ${formattedTime}\nJoin MeetHour: ${meeting.joinURL}\nMeeting ID: ${meeting.meeting_id}\nPasscode: ${meeting.passcode}`
           }
         },
         {
