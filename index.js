@@ -915,7 +915,7 @@ app.post('/deal-webhook', async (req, res) => {
 
       const meetingRes = await axios.post(
         'https://api.meethour.io/api/v1.2/meeting/schedulemeeting',
-        
+
         meetingPayload,
         {
           headers: {
@@ -957,7 +957,7 @@ app.post('/deal-webhook', async (req, res) => {
             dealIds: [Number(objectId)]
           },
           metadata: {
-            body: `${ownerName} is inviting you to a scheduled meeting.\nTopic: ${meeting.topic}\nTime: ${formattedTime}\nJoin MeetHour: ${meeting.joinURL}\nMeeting ID: ${meeting.meeting_id}\nPasscode: ${meeting.passcode}`
+            body: `${ownerName} is inviting you to a scheduled meeting.<br>Topic: ${meeting.topic}<br>Time: ${formattedTime}<br>Join MeetHour: ${meeting.joinURL}<br>Meeting ID: ${meeting.meeting_id}<br>Passcode: ${meeting.passcode}`
           }
         },
         {
