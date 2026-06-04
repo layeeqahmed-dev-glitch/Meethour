@@ -365,59 +365,8 @@ app.post("/create-meeting", async (req, res) => {
       });
     }
 
-    // ✅ STEP 1: Move token refresh to TOP so we can use it early
+    // ✅ Token pehle lo
     const freshHubspotToken = await refreshHubspotToken(portalId);
-
-    // ✅ STEP 2: Fetch hs_timezone from HubSpot CRM using startTime
-    let resolvedTimezone = "UTC"; // fallback — no hardcoded IST
-    try {
-        console.log("Waiting for HubSpot to save meeting...");
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      const meetingSearchRes = await axios.post(
-        "https://api.hubapi.com/crm/v3/objects/meetings/search",
-        {
-          filterGroups: [{
-            filters: [
-              {
-                propertyName: "hs_meeting_start_time",
-                operator: "GTE",
-                value: String(req.body.startTime - 60000)
-              },
-              {
-                propertyName: "hs_meeting_start_time",
-                operator: "LTE",
-                value: String(req.body.startTime + 60000)
-              }
-            ]
-          }],
-          properties: ["hs_timezone"]
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${freshHubspotToken}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      // ✅ DEBUG LOGS
-      console.log("RAW startTime from body:", req.body.startTime);
-      console.log("SEARCH STATUS:", meetingSearchRes.status);
-      console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
-      console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
-
-
-      const fetchedTz = meetingSearchRes.data.results?.[0]?.properties?.hs_timezone;
-      console.log("FETCHED hs_timezone:", fetchedTz);
-
-      if (fetchedTz) {
-        resolvedTimezone = fetchedTz; // e.g. "America/New_York", "Asia/Calcutta"
-      }
-    } catch (tzErr) {
-      console.log("Could not fetch hs_timezone, using UTC fallback:", tzErr.message);
-    }
-
-    console.log("RESOLVED TIMEZONE:", resolvedTimezone);
 
     // Fetch MeetHour token from DB
     const tokenRecord = await Token.findOne({ hubspotPortalId: portalId });
@@ -434,125 +383,174 @@ app.post("/create-meeting", async (req, res) => {
     const token = tokenRecord.meethourAccessToken;
     const meethourUserId = tokenRecord.meethourUserId;
 
-    // ✅ STEP 3: Use resolvedTimezone everywhere — no hardcoded Asia/Kolkata
-    const start = new Date(req.body.startTime);
+    // ✅ Pehle HubSpot ko turant response do
+    // Temporary conferenceId banao
+    const tempConferenceId = "pending-" + Date.now();
 
-    const localDate = new Date(start.toLocaleString("en-US", { timeZone: resolvedTimezone }));
+    // ✅ Background mein baaki kaam karo
+    setImmediate(async () => {
+      try {
+        // ✅ 15 sec wait karo taaki HubSpot CRM mein meeting save ho jaye
+        console.log("Waiting 15 sec for HubSpot to save meeting...");
+        await new Promise(resolve => setTimeout(resolve, 15000));
 
-    const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
+        // ✅ CRM se timezone fetch karo
+        let resolvedTimezone = "UTC";
+        try {
+          const meetingSearchRes = await axios.post(
+            "https://api.hubapi.com/crm/v3/objects/meetings/search",
+            {
+              filterGroups: [{
+                filters: [
+                  {
+                    propertyName: "hs_meeting_start_time",
+                    operator: "GTE",
+                    value: String(req.body.startTime - 60000)
+                  },
+                  {
+                    propertyName: "hs_meeting_start_time",
+                    operator: "LTE",
+                    value: String(req.body.startTime + 60000)
+                  }
+                ]
+              }],
+              properties: ["hs_timezone"]
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${freshHubspotToken}`,
+                "Content-Type": "application/json"
+              }
+            }
+          );
 
-    let hours = localDate.getHours();
-    const minutes = localDate.getMinutes();
+          console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
+          console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
 
-    const meridiem = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
+          const fetchedTz = meetingSearchRes.data.results?.[0]?.properties?.hs_timezone;
+          console.log("FETCHED hs_timezone:", fetchedTz);
 
-    const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-
-    console.log("meeting_date:", meeting_date);
-    console.log("meeting_time:", meeting_time);
-    console.log("meeting_meridiem:", meridiem);
-
-    const attend = invitees
-      .filter(i => i?.email)
-      .map(i => ({
-        first_name: i.firstName,
-        last_name: i.lastName || "",
-        email: i.email
-      }));
-
-    const payload = {
-      meeting_name: req.body.topic || "Demo with client",
-      meeting_date,
-      meeting_time,
-      meeting_meridiem: meridiem,
-      timezone: resolvedTimezone, // ✅ dynamic, no convertHubspotTimezone needed
-      passcode: generatePasscode(),
-      attend,
-      send_calendar_invite: 1,
-      hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
-    };
-
-    console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
-
-    const response = await axios.post(
-      "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
+          if (fetchedTz) {
+            resolvedTimezone = fetchedTz;
+          }
+        } catch (tzErr) {
+          console.log("Timezone fetch error:", tzErr.message);
         }
-      }
-    );
 
-    const meeting = response.data.data;
+        console.log("RESOLVED TIMEZONE:", resolvedTimezone);
 
-    // ✅ STEP 4: Use resolvedTimezone for formatted display time too
-    const formattedTime = new Date(req.body.startTime).toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: resolvedTimezone
-    });
+        // ✅ Timezone se time convert karo
+        const start = new Date(req.body.startTime);
+        const localDate = new Date(start.toLocaleString("en-US", { timeZone: resolvedTimezone }));
 
-    // Fetch owner name
-    console.log("========== OWNER DEBUG ==========");
-    console.log("FULL REQUEST BODY:", JSON.stringify(req.body, null, 2));
+        const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
 
-    let ownerName = "Host";
-    const idToUse = req.body.organizerUserId || req.body.userId;
-    console.log("USER ID FROM REQUEST:", idToUse);
+        let hours = localDate.getHours();
+        const minutes = localDate.getMinutes();
+        const meridiem = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12 || 12;
+        const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
-    if (idToUse) {
-      const ownerRes = await axios.get(
-        `https://api.hubapi.com/crm/v3/owners?userId=${idToUse}`,
-        {
-          headers: {
-            Authorization: `Bearer ${freshHubspotToken}`
+        console.log("meeting_date:", meeting_date);
+        console.log("meeting_time:", meeting_time);
+        console.log("meeting_meridiem:", meridiem);
+
+        const attend = invitees
+          .filter(i => i?.email)
+          .map(i => ({
+            first_name: i.firstName,
+            last_name: i.lastName || "",
+            email: i.email
+          }));
+
+        const payload = {
+          meeting_name: req.body.topic || "Demo with client",
+          meeting_date,
+          meeting_time,
+          meeting_meridiem: meridiem,
+          timezone: resolvedTimezone, // ✅ dynamic timezone
+          passcode: generatePasscode(),
+          attend,
+          send_calendar_invite: 1,
+          hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
+        };
+
+        console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
+
+        const response = await axios.post(
+          "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        const meeting = response.data.data;
+
+        // ✅ Owner name fetch karo
+        let ownerName = "Host";
+        const idToUse = req.body.organizerUserId || req.body.userId;
+
+        if (idToUse) {
+          const ownerRes = await axios.get(
+            `https://api.hubapi.com/crm/v3/owners?userId=${idToUse}`,
+            { headers: { Authorization: `Bearer ${freshHubspotToken}` } }
+          );
+
+          const matchedOwner = ownerRes.data.results.find(
+            owner =>
+              String(owner.userId) === String(idToUse) ||
+              String(owner.userIdIncludingInactive) === String(idToUse)
+          );
+
+          if (matchedOwner) {
+            ownerName = `${matchedOwner.firstName || ""} ${matchedOwner.lastName || ""}`.trim();
           }
         }
-      );
 
-      const matchedOwner = ownerRes.data.results.find(
-        owner =>
-          String(owner.userId) === String(idToUse) ||
-          String(owner.userIdIncludingInactive) === String(idToUse)
-      );
+        // ✅ Formatted time bhi resolved timezone mein
+        const formattedTime = new Date(req.body.startTime).toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: resolvedTimezone
+        });
 
-      console.log("MATCHED OWNER:", matchedOwner);
+        const details = `
+          <b>${ownerName} is inviting you to a scheduled meeting.</b>
+          <b>Topic:</b> ${meeting.topic}
+          <b>Time:</b> ${formattedTime} (${resolvedTimezone})<br>
+          <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
+          <b>Meeting ID:</b> ${meeting.meeting_id}
+          <b>Passcode:</b> ${meeting.passcode}
+        `;
 
-      if (matchedOwner) {
-        ownerName = `${matchedOwner.firstName || ""} ${matchedOwner.lastName || ""}`.trim();
+        // ✅ DB mein save karo
+        await Meeting.create({
+          hubspotMeetingId: `${req.body.portalId}-${req.body.startTime}`,
+          hubspotPortalId: portalId,
+          meethourMeetingId: meeting.meeting_id,
+          meethourMeetingUrl: meeting.joinURL,
+          meetingName: req.body.topic || "HubSpot Meeting",
+          conferenceId: String(meeting.id)
+        });
+
+        console.log("Meeting saved to DB!");
+        console.log("Background job done! Meeting scheduled in:", resolvedTimezone);
+
+      } catch (bgErr) {
+        console.log("BACKGROUND ERROR:", bgErr.response?.data || bgErr.message);
+        console.log("STACK:", bgErr.stack);
       }
-    }
-
-    console.log("FINAL OWNER NAME:", ownerName);
-    console.log("========== END DEBUG ==========");
-
-    const details = `
-      <b>${ownerName} is inviting you to a scheduled meeting.</b>
-      <b>Topic:</b> ${meeting.topic}
-      <b>Time:</b> ${formattedTime} (${resolvedTimezone})<br>
-      <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
-      <b>Meeting ID:</b> ${meeting.meeting_id}
-      <b>Passcode:</b> ${meeting.passcode}
-    `;
-
-    await Meeting.create({
-      hubspotMeetingId: `${req.body.portalId}-${req.body.startTime}`,
-      hubspotPortalId: portalId,
-      meethourMeetingId: meeting.meeting_id,
-      meethourMeetingUrl: meeting.joinURL,
-      meetingName: req.body.topic || "HubSpot Meeting",
-      conferenceId: String(meeting.id)
     });
 
-    console.log("Meeting saved to DB!");
-
+    // ✅ HubSpot ko turant response do
     return res.json({
-      conferenceId: meeting.id,
-      conferenceUrl: meeting.joinURL,
-      conferenceDetails: details
+      conferenceId: tempConferenceId,
+      conferenceUrl: "https://meethour.io",
+      conferenceDetails: "Meeting is being scheduled..."
     });
 
   } catch (err) {
@@ -817,7 +815,6 @@ app.post('/deal-webhook', async (req, res) => {
 });
 
 //update meeting
-
 app.post("/update-meeting", async (req, res) => {
   try {
     console.log("========== UPDATE MEETING ==========");
@@ -825,13 +822,7 @@ app.post("/update-meeting", async (req, res) => {
 
     await connectDB();
 
-    const {
-      portalId,
-      conferenceId,
-      topic,
-      startTime,
-      timezone,
-    } = req.body;
+    const { portalId, conferenceId, topic, startTime } = req.body;
 
     if (!portalId || !conferenceId) {
       return res.sendStatus(400);
@@ -853,96 +844,134 @@ app.post("/update-meeting", async (req, res) => {
       return res.sendStatus(404);
     }
 
-    // base payload
     const editPayload = {
       meeting_id: meetingRecord.meethourMeetingId,
     };
 
-    // topic changed
     if (topic) {
       editPayload.meeting_name = topic;
     }
 
-    // date/time changed
     if (startTime) {
-      const start = new Date(startTime);
+      // ✅ Pehle HubSpot ko response do
+      res.sendStatus(204);
 
-      const istDate = new Date(
-        start.toLocaleString("en-US", {
-          timeZone: "Asia/Kolkata",
-        })
+      // ✅ Background mein timezone fetch karo
+      setImmediate(async () => {
+        try {
+          console.log("Update: Waiting 15 sec for HubSpot CRM...");
+          await new Promise(resolve => setTimeout(resolve, 15000));
+
+          // ✅ Fresh token lo
+          const freshHubspotToken = await refreshHubspotToken(portalId);
+
+          // ✅ CRM se timezone fetch karo
+          let resolvedTimezone = "UTC";
+
+          const meetingSearchRes = await axios.post(
+            "https://api.hubapi.com/crm/v3/objects/meetings/search",
+            {
+              filterGroups: [{
+                filters: [
+                  {
+                    propertyName: "hs_meeting_start_time",
+                    operator: "GTE",
+                    value: String(startTime - 60000)
+                  },
+                  {
+                    propertyName: "hs_meeting_start_time",
+                    operator: "LTE",
+                    value: String(startTime + 60000)
+                  }
+                ]
+              }],
+              properties: ["hs_timezone"]
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${freshHubspotToken}`,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+
+          const fetchedTz = meetingSearchRes.data.results?.[0]?.properties?.hs_timezone;
+          console.log("UPDATE - FETCHED hs_timezone:", fetchedTz);
+
+          if (fetchedTz) resolvedTimezone = fetchedTz;
+          console.log("UPDATE - RESOLVED TIMEZONE:", resolvedTimezone);
+
+          // ✅ Time convert karo resolved timezone se
+          const start = new Date(startTime);
+          const localDate = new Date(start.toLocaleString("en-US", { timeZone: resolvedTimezone }));
+
+          const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
+
+          let hours = localDate.getHours();
+          const minutes = localDate.getMinutes();
+          const meeting_meridiem = hours >= 12 ? "PM" : "AM";
+          hours = hours % 12 || 12;
+          const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+
+          editPayload.meeting_date = meeting_date;
+          editPayload.meeting_time = meeting_time;
+          editPayload.meeting_meridiem = meeting_meridiem;
+          editPayload.timezone = resolvedTimezone; // ✅ dynamic
+
+          console.log("UPDATE EDIT PAYLOAD:", JSON.stringify(editPayload, null, 2));
+
+          await axios.post(
+            "https://api.meethour.io/api/v1.2/meeting/editmeeting",
+            editPayload,
+            {
+              headers: {
+                Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          const updateData = {};
+          if (topic) updateData.meetingName = topic;
+          await Meeting.findOneAndUpdate(
+            { conferenceId: String(conferenceId) },
+            updateData
+          );
+
+          console.log("Update background job done!");
+
+        } catch (bgErr) {
+          console.log("UPDATE BACKGROUND ERROR:", bgErr.response?.data || bgErr.message);
+        }
+      });
+
+    } else {
+      // startTime nahi aaya — sirf topic update karo turant
+      console.log("EDIT PAYLOAD:", JSON.stringify(editPayload, null, 2));
+
+      await axios.post(
+        "https://api.meethour.io/api/v1.2/meeting/editmeeting",
+        editPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
 
-      const meeting_date = `${istDate.getFullYear()}-${String(
-        istDate.getMonth() + 1
-      ).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
+      const updateData = {};
+      if (topic) updateData.meetingName = topic;
+      await Meeting.findOneAndUpdate(
+        { conferenceId: String(conferenceId) },
+        updateData
+      );
 
-      let hours = istDate.getHours();
-
-      const minutes = istDate.getMinutes();
-
-      const meeting_meridiem =
-        hours >= 12 ? "PM" : "AM";
-
-      hours = hours % 12 || 12;
-
-      const meeting_time = `${String(hours).padStart(
-        2,
-        "0"
-      )}:${String(minutes).padStart(2, "0")}`;
-
-      editPayload.meeting_date = meeting_date;
-      editPayload.meeting_time = meeting_time;
-      editPayload.meeting_meridiem = meeting_meridiem;
-
-      if (timezone) {
-        editPayload.timezone =
-          convertHubspotTimezone(timezone);
-      }
+      return res.sendStatus(204);
     }
 
-    console.log(
-      "EDIT PAYLOAD:",
-      JSON.stringify(editPayload, null, 2)
-    );
-
-    const response = await axios.post(
-      "https://api.meethour.io/api/v1.2/meeting/editmeeting",
-      editPayload,
-      {
-        headers: {
-          Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    console.log(
-      "MEETHOUR RESPONSE:",
-      JSON.stringify(response.data, null, 2)
-    );
-
-    // DB update
-    const updateData = {};
-
-    if (topic) {
-      updateData.meetingName = topic;
-    }
-
-    await Meeting.findOneAndUpdate(
-      {
-        conferenceId: String(conferenceId),
-      },
-      updateData
-    );
-
-    return res.sendStatus(204);
   } catch (err) {
-    console.error(
-      "UPDATE ERROR:",
-      err.response?.data || err.message
-    );
-
+    console.error("UPDATE ERROR:", err.response?.data || err.message);
     return res.sendStatus(500);
   }
 });
