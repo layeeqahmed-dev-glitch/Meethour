@@ -375,11 +375,18 @@ app.post("/create-meeting", async (req, res) => {
         "https://api.hubapi.com/crm/v3/objects/meetings/search",
         {
           filterGroups: [{
-            filters: [{
-              propertyName: "hs_meeting_start_time",
-              operator: "EQ",
-              value: String(req.body.startTime)
-            }]
+            filters: [
+              {
+                propertyName: "hs_meeting_start_time",
+                operator: "GTE",
+                value: String(req.body.startTime - 60000) // 1 min pehle
+              },
+              {
+                propertyName: "hs_meeting_start_time",
+                operator: "LTE",
+                value: String(req.body.startTime + 60000) // 1 min baad
+              }
+            ]
           }],
           properties: ["hs_timezone"]
         },
