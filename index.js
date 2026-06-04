@@ -340,17 +340,13 @@ app.post("/create-meeting", async (req, res) => {
   try {
     console.log("------ NEW REQUEST ------");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
-    console.log("TIMEZONE:", req.body.timezone);
-    // Wait for DB to connect before doing anything else
-    // This is needed because Vercel is serverless and DB may not be connected yet
+
     await connectDB();
 
     const invitees = req.body.invitees || [];
 
-    //if no invitee from hubspot then
     if (invitees.length === 0) {
-      //log no invitee if there is no mentioned
-      console.log(" No invitees");
+      console.log("No invitees");
       return res.json({
         conferenceId: "no-attendees-" + Date.now(),
         conferenceUrl: "https://meethour.io",
@@ -358,12 +354,10 @@ app.post("/create-meeting", async (req, res) => {
       });
     }
 
-    // Get portalId from request
     const portalId = req.body.portalId;
 
-    //if we dont find portalId log no portalId found
     if (!portalId) {
-      console.log(" No portalId in request");
+      console.log("No portalId in request");
       return res.json({
         conferenceId: "error-" + Date.now(),
         conferenceUrl: "https://meethour.io",
@@ -371,14 +365,49 @@ app.post("/create-meeting", async (req, res) => {
       });
     }
 
-    // Fetch MeetHour token from DB dynamically
+    // ✅ STEP 1: Move token refresh to TOP so we can use it early
+    const freshHubspotToken = await refreshHubspotToken(portalId);
+
+    // ✅ STEP 2: Fetch hs_timezone from HubSpot CRM using startTime
+    let resolvedTimezone = "UTC"; // fallback — no hardcoded IST
+    try {
+      const meetingSearchRes = await axios.post(
+        "https://api.hubapi.com/crm/v3/objects/meetings/search",
+        {
+          filterGroups: [{
+            filters: [{
+              propertyName: "hs_meeting_start_time",
+              operator: "EQ",
+              value: req.body.startTime
+            }]
+          }],
+          properties: ["hs_timezone"]
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${freshHubspotToken}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      const fetchedTz = meetingSearchRes.data.results?.[0]?.properties?.hs_timezone;
+      console.log("FETCHED hs_timezone:", fetchedTz);
+
+      if (fetchedTz) {
+        resolvedTimezone = fetchedTz; // e.g. "America/New_York", "Asia/Calcutta"
+      }
+    } catch (tzErr) {
+      console.log("Could not fetch hs_timezone, using UTC fallback:", tzErr.message);
+    }
+
+    console.log("RESOLVED TIMEZONE:", resolvedTimezone);
+
+    // Fetch MeetHour token from DB
     const tokenRecord = await Token.findOne({ hubspotPortalId: portalId });
 
-    // Check if user exists in DB and has MeetHour token
     if (!tokenRecord || !tokenRecord.meethourAccessToken) {
       console.log("No MeetHour token found for portal:", portalId);
-
-      // Return error response if MeetHour is not connected
       return res.json({
         conferenceId: "error-" + Date.now(),
         conferenceUrl: "https://meethour.io",
@@ -386,33 +415,22 @@ app.post("/create-meeting", async (req, res) => {
       });
     }
 
-    //getting token from tokenRecord from database
     const token = tokenRecord.meethourAccessToken;
-    const meethourUserEmail = tokenRecord.meethourUserEmail;
-    const meethourUserName = tokenRecord.meethourUserName;
     const meethourUserId = tokenRecord.meethourUserId;
-    //converting valid input (time) into js date object
-    // Convert UTC timestamp from HubSpot to JS Date object
+
+    // ✅ STEP 3: Use resolvedTimezone everywhere — no hardcoded Asia/Kolkata
     const start = new Date(req.body.startTime);
 
-    // Convert UTC to IST by using Asia/Kolkata timezone
-    // toLocaleString gives us the time in IST as a string, then we wrap it in new Date()
-    const istDate = new Date(start.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const localDate = new Date(start.toLocaleString("en-US", { timeZone: resolvedTimezone }));
 
-    // Extract date in YYYY-MM-DD format from IST date
-    const meeting_date = `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
+    const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
 
-    // Extract hours and minutes from IST date (not UTC)
-    let hours = istDate.getHours();
-    const minutes = istDate.getMinutes();
+    let hours = localDate.getHours();
+    const minutes = localDate.getMinutes();
 
-    // Determine AM or PM
     const meridiem = hours >= 12 ? "PM" : "AM";
-
-    // Convert 24hr to 12hr format
     hours = hours % 12 || 12;
 
-    // Pad hours and minutes to 2 digits e.g. 3 => 03
     const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
     console.log("meeting_date:", meeting_date);
@@ -420,30 +438,27 @@ app.post("/create-meeting", async (req, res) => {
     console.log("meeting_meridiem:", meridiem);
 
     const attend = invitees
-      //if there is no email to invitee dont select that user
       .filter(i => i?.email)
-      //checking for first name and storing making it as first_name,last_name
       .map(i => ({
         first_name: i.firstName,
         last_name: i.lastName || "",
         email: i.email
       }));
 
-    //these all will be sent to meethour api (schedulemeeting) to schedule meeting
     const payload = {
       meeting_name: req.body.topic || "Demo with client",
       meeting_date,
       meeting_time,
       meeting_meridiem: meridiem,
-      timezone: convertHubspotTimezone(req.body.timezone),
+      timezone: resolvedTimezone, // ✅ dynamic, no convertHubspotTimezone needed
       passcode: generatePasscode(),
       attend,
       send_calendar_invite: 1,
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
     };
 
+    console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
 
-    //making post req to meethour for scheduling meeting
     const response = await axios.post(
       "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
       payload,
@@ -455,28 +470,21 @@ app.post("/create-meeting", async (req, res) => {
       }
     );
 
-    //extracting the data after creating meeting to show in meetings tab in hubspot
     const meeting = response.data.data;
 
-    //converting time into readable format so that we can send details with this time & date format
+    // ✅ STEP 4: Use resolvedTimezone for formatted display time too
     const formattedTime = new Date(req.body.startTime).toLocaleString("en-US", {
       dateStyle: "medium",
       timeStyle: "short",
-      timeZone: "Asia/Kolkata"
+      timeZone: resolvedTimezone
     });
 
-    // phir use karo
+    // Fetch owner name
     console.log("========== OWNER DEBUG ==========");
-
-    console.log(
-      "FULL REQUEST BODY:",
-      JSON.stringify(req.body, null, 2)
-    );
+    console.log("FULL REQUEST BODY:", JSON.stringify(req.body, null, 2));
 
     let ownerName = "Host";
-
     const idToUse = req.body.organizerUserId || req.body.userId;
-
     console.log("USER ID FROM REQUEST:", idToUse);
 
     if (idToUse) {
@@ -498,36 +506,32 @@ app.post("/create-meeting", async (req, res) => {
       console.log("MATCHED OWNER:", matchedOwner);
 
       if (matchedOwner) {
-        ownerName =
-          `${matchedOwner.firstName || ""} ${matchedOwner.lastName || ""}`.trim();
+        ownerName = `${matchedOwner.firstName || ""} ${matchedOwner.lastName || ""}`.trim();
       }
     }
 
     console.log("FINAL OWNER NAME:", ownerName);
-
     console.log("========== END DEBUG ==========");
 
-    //Meeting details that will be shown in the meetings tab in hubspot
     const details = `
-        <b>${ownerName} is inviting you to a scheduled meeting.</b>
-        <b>Topic:</b> ${meeting.topic}
-        <b>Time:</b> ${formattedTime} (${convertHubspotTimezone(req.body.timezone)})<br>
-        <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
-        <b>Meeting ID:</b> ${meeting.meeting_id}
-        <b>Passcode:</b> ${meeting.passcode}
-      `;
+      <b>${ownerName} is inviting you to a scheduled meeting.</b>
+      <b>Topic:</b> ${meeting.topic}
+      <b>Time:</b> ${formattedTime} (${resolvedTimezone})<br>
+      <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
+      <b>Meeting ID:</b> ${meeting.meeting_id}
+      <b>Passcode:</b> ${meeting.passcode}
+    `;
 
-    //meeting details that will be saved in the database
     await Meeting.create({
       hubspotMeetingId: `${req.body.portalId}-${req.body.startTime}`,
       hubspotPortalId: portalId,
       meethourMeetingId: meeting.meeting_id,
       meethourMeetingUrl: meeting.joinURL,
       meetingName: req.body.topic || "HubSpot Meeting",
-      conferenceId: String(meeting.id)  // save conferenceId
+      conferenceId: String(meeting.id)
     });
 
-    console.log('Meeting saved to DB!');
+    console.log("Meeting saved to DB!");
 
     return res.json({
       conferenceId: meeting.id,
@@ -535,14 +539,9 @@ app.post("/create-meeting", async (req, res) => {
       conferenceDetails: details
     });
 
-    // return res.json({
-    //   conferenceId: String(meeting.id),
-    //   conferenceUrl: meeting.joinURL
-    // });
-
   } catch (err) {
     console.log("ERROR:", err.response?.data || err.message);
-    console.log(" STACK:", err.stack);
+    console.log("STACK:", err.stack);
     return res.json({
       conferenceId: "error-" + Date.now(),
       conferenceUrl: "https://meethour.io",
@@ -550,7 +549,6 @@ app.post("/create-meeting", async (req, res) => {
     });
   }
 });
-
 
 // delete meeting route
 app.post("/delete-meeting", async (req, res) => {
