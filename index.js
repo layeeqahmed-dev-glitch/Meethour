@@ -465,9 +465,6 @@ app.post("/create-meeting", async (req, res) => {
       timeZone: "Asia/Kolkata"
     });
 
-    //// Fetch user name from HubSpot using userId sent in request
-    const freshHubspotToken = await refreshHubspotToken(portalId);
-
     // phir use karo
     console.log("========== OWNER DEBUG ==========");
 
@@ -935,6 +932,18 @@ app.post("/update-meeting", async (req, res) => {
     return res.sendStatus(500);
   }
 });
+
+app.get("/test-refresh-token", async (req, res) => {
+  try {
+    const token = await refreshHubspotToken(246208918); // your portalId
+    console.log("Fresh token:", token);
+    res.json({ token });
+  } catch (err) {
+    console.log("Error:", err.message);
+    res.json({ error: err.message });
+  }
+});
+
 
 //localhost running @ 3000
 if (process.env.NODE_ENV !== 'production') {
