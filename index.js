@@ -379,12 +379,12 @@ app.post("/create-meeting", async (req, res) => {
               {
                 propertyName: "hs_meeting_start_time",
                 operator: "GTE",
-                value: String(req.body.startTime - 60000) // 1 min pehle
+                value: String(req.body.startTime - 60000)
               },
               {
                 propertyName: "hs_meeting_start_time",
                 operator: "LTE",
-                value: String(req.body.startTime + 60000) // 1 min baad
+                value: String(req.body.startTime + 60000)
               }
             ]
           }],
@@ -397,6 +397,13 @@ app.post("/create-meeting", async (req, res) => {
           }
         }
       );
+
+      // ✅ DEBUG LOGS
+      console.log("RAW startTime from body:", req.body.startTime);
+      console.log("SEARCH STATUS:", meetingSearchRes.status);
+      console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
+      console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
+
 
       const fetchedTz = meetingSearchRes.data.results?.[0]?.properties?.hs_timezone;
       console.log("FETCHED hs_timezone:", fetchedTz);
