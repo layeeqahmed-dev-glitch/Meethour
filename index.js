@@ -372,7 +372,7 @@ app.post("/create-meeting", async (req, res) => {
     let resolvedTimezone = "UTC"; // fallback — no hardcoded IST
     try {
         console.log("Waiting for HubSpot to save meeting...");
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
       const meetingSearchRes = await axios.post(
         "https://api.hubapi.com/crm/v3/objects/meetings/search",
         {
