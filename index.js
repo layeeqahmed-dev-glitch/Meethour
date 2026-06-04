@@ -933,7 +933,8 @@ app.post("/update-meeting", async (req, res) => {
 
 app.get("/test-refresh-token", async (req, res) => {
   try {
-    const token = await refreshHubspotToken(246208918); // your portalId
+    await connectDB(); // ✅ PEHLE YEH
+    const token = await refreshHubspotToken(246208918);
     console.log("Fresh token:", token);
     res.json({ token });
   } catch (err) {
