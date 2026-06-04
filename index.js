@@ -378,7 +378,7 @@ app.post("/create-meeting", async (req, res) => {
             filters: [{
               propertyName: "hs_meeting_start_time",
               operator: "EQ",
-              value: req.body.startTime
+              value: String(req.body.startTime)
             }]
           }],
           properties: ["hs_timezone"]
