@@ -644,82 +644,6 @@ app.post('/deal-webhook', async (req, res) => {
     for (const event of events) {
       const { subscriptionType, portalId, objectId, propertyValue } = event;
 
-      // ✅ Meeting creation event handle karo
-      if (subscriptionType === 'object.creation') {
-        console.log("Meeting creation event received for objectId:", objectId);
-
-        try {
-          const hubspotToken = await refreshHubspotToken(portalId);
-
-          // ✅ CRM se hs_timezone fetch karo directly objectId se
-          const meetingRes = await axios.get(
-            `https://api.hubapi.com/crm/v3/objects/meetings/${objectId}?properties=hs_timezone`,
-            { headers: { Authorization: `Bearer ${hubspotToken}` } }
-          );
-
-          const hsTimezone = meetingRes.data.properties?.hs_timezone;
-          console.log("FETCHED hs_timezone:", hsTimezone);
-
-          if (!hsTimezone) {
-            console.log("No hs_timezone found, skipping update");
-            continue;
-          }
-
-          // ✅ DB se latest pending meeting dhundho same portalId se
-          const pendingMeeting = await Meeting.findOne({
-            hubspotPortalId: String(portalId),
-            timezonePending: true
-          }).sort({ createdAt: -1 });
-
-          if (!pendingMeeting) {
-            console.log("No pending meeting found for portal:", portalId);
-            continue;
-          }
-
-          console.log("Pending meeting found:", pendingMeeting.meethourMeetingId);
-
-          const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
-
-          if (!tokenRecord?.meethourAccessToken) {
-            console.log("No MeetHour token found");
-            continue;
-          }
-
-          // ✅ MeetHour meeting update karo sahi timezone se
-          const editRes = await axios.post(
-            "https://api.meethour.io/api/v1.2/meeting/editmeeting",
-            {
-              meeting_id: pendingMeeting.meethourMeetingId,
-              timezone: hsTimezone
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
-                "Content-Type": "application/json"
-              }
-            }
-          );
-
-          console.log("MeetHour update response:", JSON.stringify(editRes.data, null, 2));
-
-          // ✅ DB update karo
-          await Meeting.findOneAndUpdate(
-            { _id: pendingMeeting._id },
-            {
-              timezonePending: false,
-              pendingTimezone: hsTimezone
-            }
-          );
-
-          console.log("Timezone updated successfully:", hsTimezone);
-
-        } catch (tzErr) {
-          console.log("Meeting creation handler error:", tzErr.response?.data || tzErr.message);
-        }
-
-        continue;
-      }
-
       if (subscriptionType !== 'deal.propertyChange') continue;
 
       console.log(`Deal ${objectId} stage changed to: ${propertyValue} for portal: ${portalId}`);
@@ -795,6 +719,7 @@ app.post('/deal-webhook', async (req, res) => {
       }
 
       const meeting_date = deal.properties.meeting_date;
+      // CHANGE 1: dropdown value is already a clean string like "04:00", use as-is
       const meeting_time = deal.properties.meeting_time;
       const meeting_meridiem = deal.properties.meeting_meridiem;
       const timezone = deal.properties.timezone;
@@ -819,8 +744,10 @@ app.post('/deal-webhook', async (req, res) => {
         send_calendar_invite: 1
       };
 
+
       const meetingRes = await axios.post(
         'https://api.meethour.io/api/v1.2/meeting/schedulemeeting',
+
         meetingPayload,
         {
           headers: {
@@ -844,6 +771,7 @@ app.post('/deal-webhook', async (req, res) => {
       });
       console.log('Meeting saved to DB!');
 
+      // CHANGE 2 & 3: log as engagement type MEETING so it shows in HubSpot Meetings tab
       const formattedTime = `${meeting_time} ${meeting_meridiem} (${timezone})`;
       const startTimestamp = new Date(`${meeting_date} ${meeting_time} ${meeting_meridiem}`).getTime();
 
@@ -863,6 +791,7 @@ app.post('/deal-webhook', async (req, res) => {
           metadata: {
             title: `${dealName} - MeetHour Meeting`,
             body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
+
             <b>Topic:</b> ${meeting.topic}<br>
             <b>Time:</b>${formattedTime}<br><br>
             <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
@@ -887,6 +816,8 @@ app.post('/deal-webhook', async (req, res) => {
     res.sendStatus(200);
   }
 });
+
+
 
 //update meeting
 
