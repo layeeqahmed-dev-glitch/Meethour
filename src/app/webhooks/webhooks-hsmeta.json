@@ -12,9 +12,12 @@
           "subscriptionType": "deal.propertyChange",
           "propertyName": "dealstage",
           "active": true
-        },
+        }
+      ],
+      "crmObjects": [
         {
           "subscriptionType": "object.creation",
+          "objectType": "MEETING_EVENT",
           "active": true
         }
       ]
