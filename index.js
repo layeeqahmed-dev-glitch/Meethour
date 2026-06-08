@@ -366,57 +366,15 @@ app.post("/create-meeting", async (req, res) => {
       });
     }
 
-    // ✅ STEP 1: Move token refresh to TOP so we can use it early
     const freshHubspotToken = await refreshHubspotToken(portalId);
 
-    // ✅ STEP 2: Fetch hs_timezone from HubSpot CRM using startTime
-    let resolvedTimezone = "UTC"; // fallback — no hardcoded IST
-    try {
-        console.log("Waiting for HubSpot to save meeting...");
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      const meetingSearchRes = await axios.post(
-        "https://api.hubapi.com/crm/v3/objects/meetings/search",
-        {
-          filterGroups: [{
-            filters: [
-              {
-                propertyName: "hs_meeting_start_time",
-                operator: "GTE",
-                value: String(req.body.startTime - 60000)
-              },
-              {
-                propertyName: "hs_meeting_start_time",
-                operator: "LTE",
-                value: String(req.body.startTime + 60000)
-              }
-            ]
-          }],
-          properties: ["hs_timezone"]
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${freshHubspotToken}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
+    const resolvedTimezone = "UTC";
 
-      // ✅ DEBUG LOGS
-      console.log("RAW startTime from body:", req.body.startTime);
-      console.log("SEARCH STATUS:", meetingSearchRes.status);
-      console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
-      console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
-
-
-      const fetchedTz = meetingSearchRes.data.results?.[0]?.properties?.hs_timezone;
-      console.log("FETCHED hs_timezone:", fetchedTz);
-
-      if (fetchedTz) {
-        resolvedTimezone = fetchedTz; // e.g. "America/New_York", "Asia/Calcutta"
-      }
-    } catch (tzErr) {
-      console.log("Could not fetch hs_timezone, using UTC fallback:", tzErr.message);
-    }
+    // ✅ DEBUG LOGS
+    console.log("RAW startTime from body:", req.body.startTime);
+    console.log("SEARCH STATUS:", meetingSearchRes.status);
+    console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
+    console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
 
     console.log("RESOLVED TIMEZONE:", resolvedTimezone);
 
@@ -435,15 +393,13 @@ app.post("/create-meeting", async (req, res) => {
     const token = tokenRecord.meethourAccessToken;
     const meethourUserId = tokenRecord.meethourUserId;
 
-    // ✅ STEP 3: Use resolvedTimezone everywhere — no hardcoded Asia/Kolkata
+    //  STEP 3: Use resolvedTimezone everywhere 
     const start = new Date(req.body.startTime);
 
-    const localDate = new Date(start.toLocaleString("en-US", { timeZone: resolvedTimezone }));
+    const meeting_date = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}-${String(start.getUTCDate()).padStart(2, "0")}`;
 
-    const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
-
-    let hours = localDate.getHours();
-    const minutes = localDate.getMinutes();
+    let hours = start.getUTCHours();
+    const minutes = start.getUTCMinutes();
 
     const meridiem = hours >= 12 ? "PM" : "AM";
     hours = hours % 12 || 12;
@@ -463,11 +419,11 @@ app.post("/create-meeting", async (req, res) => {
       }));
 
     const payload = {
-      meeting_name: req.body.topic || "Demo with client",
+      meeting_name: req.body.topic,
       meeting_date,
       meeting_time,
       meeting_meridiem: meridiem,
-      timezone: resolvedTimezone, // ✅ dynamic, no convertHubspotTimezone needed
+      timezone: resolvedTimezone,
       passcode: generatePasscode(),
       attend,
       send_calendar_invite: 1,
@@ -489,7 +445,7 @@ app.post("/create-meeting", async (req, res) => {
 
     const meeting = response.data.data;
 
-    // ✅ STEP 4: Use resolvedTimezone for formatted display time too
+    //  STEP 4: Use resolvedTimezone for formatted display time too
     const formattedTime = new Date(req.body.startTime).toLocaleString("en-US", {
       dateStyle: "medium",
       timeStyle: "short",
