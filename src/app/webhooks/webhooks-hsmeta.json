@@ -12,6 +12,10 @@
           "subscriptionType": "deal.propertyChange",
           "propertyName": "dealstage",
           "active": true
+        },
+        {
+          "subscriptionType": "object.creation",
+          "active": true
         }
       ]
     }
