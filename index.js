@@ -336,14 +336,13 @@ function generatePasscode() {
   return passcode;
 }
 
+
 app.post("/create-meeting", async (req, res) => {
   try {
     console.log("------ NEW REQUEST ------");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
     await connectDB();
-
-    await new Promise(resolve => setTimeout(resolve, 15000));
 
     const invitees = req.body.invitees || [];
 
@@ -373,7 +372,7 @@ app.post("/create-meeting", async (req, res) => {
     // ✅ STEP 2: Fetch hs_timezone from HubSpot CRM using startTime
     let resolvedTimezone = "UTC"; // fallback — no hardcoded IST
     try {
-      console.log("Waiting for HubSpot to save meeting...");
+        console.log("Waiting for HubSpot to save meeting...");
       await new Promise(resolve => setTimeout(resolve, 3000));
       const meetingSearchRes = await axios.post(
         "https://api.hubapi.com/crm/v3/objects/meetings/search",
@@ -443,8 +442,8 @@ app.post("/create-meeting", async (req, res) => {
 
     const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
 
-    let hours = start.getUTCHours();
-    const minutes = start.getUTCMinutes();
+    let hours = localDate.getHours();
+    const minutes = localDate.getMinutes();
 
     const meridiem = hours >= 12 ? "PM" : "AM";
     hours = hours % 12 || 12;
@@ -468,7 +467,7 @@ app.post("/create-meeting", async (req, res) => {
       meeting_date,
       meeting_time,
       meeting_meridiem: meridiem,
-      timezone: "UTC", 
+      timezone: resolvedTimezone, // ✅ dynamic, no convertHubspotTimezone needed
       passcode: generatePasscode(),
       attend,
       send_calendar_invite: 1,
@@ -546,8 +545,7 @@ app.post("/create-meeting", async (req, res) => {
       meethourMeetingId: meeting.meeting_id,
       meethourMeetingUrl: meeting.joinURL,
       meetingName: req.body.topic || "HubSpot Meeting",
-      conferenceId: String(meeting.id),
-      timezonePending: true // ✅ timezone baad mein update hogi
+      conferenceId: String(meeting.id)
     });
 
     console.log("Meeting saved to DB!");
