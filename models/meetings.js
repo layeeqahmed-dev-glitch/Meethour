@@ -28,6 +28,14 @@ const MeetingSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  timezonePending: {
+    type: Boolean,
+    default: false,
+  },
+  pendingTimezone: {
+    type: String,
+    default: null,
+  }
 });
 
 module.exports = mongoose.model("Meeting", MeetingSchema);
