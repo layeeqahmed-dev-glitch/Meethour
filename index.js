@@ -371,10 +371,10 @@ app.post("/create-meeting", async (req, res) => {
     const resolvedTimezone = "UTC";
 
     // ✅ DEBUG LOGS
-    console.log("RAW startTime from body:", req.body.startTime);
-    console.log("SEARCH STATUS:", meetingSearchRes.status);
-    console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
-    console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
+    // console.log("RAW startTime from body:", req.body.startTime);
+    // console.log("SEARCH STATUS:", meetingSearchRes.status);
+    // console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
+    // console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
 
     console.log("RESOLVED TIMEZONE:", resolvedTimezone);
 
