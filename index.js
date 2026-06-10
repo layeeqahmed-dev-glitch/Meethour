@@ -393,6 +393,14 @@ app.post("/create-meeting", async (req, res) => {
     const token = tokenRecord.meethourAccessToken;
     const meethourUserId = tokenRecord.meethourUserId;
 
+    const durationMs = req.body.endTime - req.body.startTime;
+    const totalMinutes = Math.floor(durationMs / 60000);
+    const duration_hr = Math.floor(totalMinutes / 60);
+    const duration_min = totalMinutes % 60;
+
+    console.log("duration_hr:", duration_hr);
+    console.log("duration_min:", duration_min);
+
     //  STEP 3: Use resolvedTimezone everywhere 
     const start = new Date(req.body.startTime);
 
@@ -427,6 +435,8 @@ app.post("/create-meeting", async (req, res) => {
       passcode: generatePasscode(),
       attend,
       send_calendar_invite: 1,
+      duration_hr,   
+      duration_min,  
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
     };
 
