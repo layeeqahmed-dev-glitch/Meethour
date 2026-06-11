@@ -929,6 +929,141 @@ app.get("/test-refresh-token", async (req, res) => {
 });
 
 
+//cron
+app.get("/cron-fix-timezone", async (req, res) => {
+  try {
+    console.log("------ CRON JOB STARTED ------");
+    await connectDB();
+
+    // ✅ Pending meetings dhundho
+    const pendingMeetings = await Meeting.find({ timezonePending: true });
+
+    console.log("Pending meetings found:", pendingMeetings.length);
+
+    if (pendingMeetings.length === 0) {
+      return res.json({ message: "No pending meetings" });
+    }
+
+    for (const pendingMeeting of pendingMeetings) {
+      try {
+        console.log("Processing meeting:", pendingMeeting.meethourMeetingId);
+
+        // ✅ startTime extract karo hubspotMeetingId se
+        // hubspotMeetingId format: "portalId-startTime"
+        const startTime = pendingMeeting.hubspotMeetingId.split("-")[1];
+        const portalId = pendingMeeting.hubspotPortalId;
+
+        console.log("startTime:", startTime);
+        console.log("portalId:", portalId);
+
+        // ✅ Fresh HubSpot token lo
+        const freshHubspotToken = await refreshHubspotToken(portalId);
+
+        // ✅ CRM se hs_timezone fetch karo
+        const meetingSearchRes = await axios.post(
+          "https://api.hubapi.com/crm/v3/objects/meetings/search",
+          {
+            filterGroups: [{
+              filters: [
+                {
+                  propertyName: "hs_meeting_start_time",
+                  operator: "GTE",
+                  value: String(Number(startTime) - 60000)
+                },
+                {
+                  propertyName: "hs_meeting_start_time",
+                  operator: "LTE",
+                  value: String(Number(startTime) + 60000)
+                }
+              ]
+            }],
+            properties: ["hs_timezone"]
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${freshHubspotToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        const hsTimezone = meetingSearchRes.data.results?.[0]?.properties?.hs_timezone;
+        console.log("FETCHED hs_timezone:", hsTimezone);
+
+        if (!hsTimezone) {
+          console.log("hs_timezone not found yet, will retry next cron");
+          continue;
+        }
+
+        // ✅ MeetHour token lo
+        const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
+
+        if (!tokenRecord?.meethourAccessToken) {
+          console.log("No MeetHour token found for portal:", portalId);
+          continue;
+        }
+
+        // ✅ startTime ko hs_timezone mein convert karo
+        const start = new Date(Number(startTime));
+        const localDate = new Date(start.toLocaleString("en-US", { timeZone: hsTimezone }));
+
+        const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
+
+        let hours = localDate.getHours();
+        const minutes = localDate.getMinutes();
+        const meridiem = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12 || 12;
+        const meeting_time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+
+        console.log("Converted to timezone:", hsTimezone);
+        console.log("meeting_date:", meeting_date);
+        console.log("meeting_time:", meeting_time);
+        console.log("meeting_meridiem:", meridiem);
+
+        // ✅ MeetHour meeting update karo sahi timezone se
+        const editRes = await axios.post(
+          "https://api.meethour.io/api/v1.2/meeting/editmeeting",
+          {
+            meeting_id: pendingMeeting.meethourMeetingId,
+            meeting_date,
+            meeting_time,
+            meeting_meridiem: meridiem,
+            timezone: hsTimezone
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        console.log("MeetHour update response:", JSON.stringify(editRes.data, null, 2));
+
+        // ✅ DB update karo
+        await Meeting.findOneAndUpdate(
+          { _id: pendingMeeting._id },
+          {
+            timezonePending: false,
+            pendingTimezone: hsTimezone
+          }
+        );
+
+        console.log("Timezone updated successfully:", hsTimezone);
+
+      } catch (meetingErr) {
+        console.log("Error processing meeting:", meetingErr.response?.data || meetingErr.message);
+      }
+    }
+
+    return res.json({ message: "Cron job completed" });
+
+  } catch (err) {
+    console.log("CRON ERROR:", err.message);
+    return res.sendStatus(500);
+  }
+});
+
 //localhost running @ 3000
 if (process.env.NODE_ENV !== 'production') {
   app.listen(3000, () => console.log("Server running on port 3000"));
