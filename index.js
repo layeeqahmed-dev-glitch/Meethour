@@ -343,8 +343,7 @@ app.post("/create-meeting", async (req, res) => {
     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
     await connectDB();
-    await new Promise(resolve => setTimeout(resolve, 10000));
-
+    
     const invitees = req.body.invitees || [];
 
     if (invitees.length === 0) {
