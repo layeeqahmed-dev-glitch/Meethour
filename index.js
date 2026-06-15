@@ -50,17 +50,6 @@ const refreshHubspotToken = async (portalId) => {
   return response.data.access_token;
 };
 
-// let lastExecutionTime = 0;
-
-// // Configure session middleware to store user session data
-// app.use(session({
-//   secret: process.env.SESSION_SECRET || 'your-secret-key',
-//   resave: false,
-//   saveUninitialized: true,
-//   cookie: { secure: false }
-// }));
-
-
 //server tesing
 app.post("/testing", async (req, res) => {
   try {
@@ -336,14 +325,13 @@ function generatePasscode() {
   return passcode;
 }
 
-
 app.post("/create-meeting", async (req, res) => {
   try {
     console.log("------ NEW REQUEST ------");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
     await connectDB();
-    
+
     const invitees = req.body.invitees || [];
 
     if (invitees.length === 0) {
@@ -368,16 +356,6 @@ app.post("/create-meeting", async (req, res) => {
 
     const freshHubspotToken = await refreshHubspotToken(portalId);
 
-    const resolvedTimezone = "UTC";
-
-    // DEBUG LOGS
-    // console.log("RAW startTime from body:", req.body.startTime);
-    // console.log("SEARCH STATUS:", meetingSearchRes.status);
-    // console.log("SEARCH TOTAL:", meetingSearchRes.data.total);
-    // console.log("SEARCH RESULTS:", JSON.stringify(meetingSearchRes.data.results, null, 2));
-
-    console.log("RESOLVED TIMEZONE:", resolvedTimezone);
-
     // Fetch MeetHour token from DB
     const tokenRecord = await Token.findOne({ hubspotPortalId: portalId });
 
@@ -393,6 +371,22 @@ app.post("/create-meeting", async (req, res) => {
     const token = tokenRecord.meethourAccessToken;
     const meethourUserId = tokenRecord.meethourUserId;
 
+    // ✅ MeetHour user details fetch karo — timezone lene ke liye
+    const userDetailsRes = await axios.post(
+      "https://api.meethour.io/api/v1.2/customer/user_details",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const resolvedTimezone = userDetailsRes.data.data.timezone || "UTC";
+    console.log("MeetHour user timezone:", resolvedTimezone);
+
+    // ✅ Duration calculate karo
     const durationMs = req.body.endTime - req.body.startTime;
     const totalMinutes = Math.floor(durationMs / 60000);
     const duration_hr = Math.floor(totalMinutes / 60);
@@ -401,13 +395,14 @@ app.post("/create-meeting", async (req, res) => {
     console.log("duration_hr:", duration_hr);
     console.log("duration_min:", duration_min);
 
-    //  STEP 3: Use resolvedTimezone everywhere 
+    // ✅ startTime ko resolvedTimezone mein convert karo
     const start = new Date(req.body.startTime);
+    const localDate = new Date(start.toLocaleString("en-US", { timeZone: resolvedTimezone }));
 
-    const meeting_date = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}-${String(start.getUTCDate()).padStart(2, "0")}`;
+    const meeting_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
 
-    let hours = start.getUTCHours();
-    const minutes = start.getUTCMinutes();
+    let hours = localDate.getHours();
+    const minutes = localDate.getMinutes();
 
     const meridiem = hours >= 12 ? "PM" : "AM";
     hours = hours % 12 || 12;
@@ -431,12 +426,12 @@ app.post("/create-meeting", async (req, res) => {
       meeting_date,
       meeting_time,
       meeting_meridiem: meridiem,
-      timezone: resolvedTimezone,
+      timezone: resolvedTimezone, // ✅ MeetHour user ka actual timezone
       passcode: generatePasscode(),
       attend,
       send_calendar_invite: 1,
-      duration_hr,   
-      duration_min,  
+      duration_hr,
+      duration_min,
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : []
     };
 
@@ -455,14 +450,12 @@ app.post("/create-meeting", async (req, res) => {
 
     const meeting = response.data.data;
 
-    //  STEP 4: Use resolvedTimezone for formatted display time too
     const formattedTime = new Date(req.body.startTime).toLocaleString("en-US", {
       dateStyle: "medium",
       timeStyle: "short",
       timeZone: resolvedTimezone
     });
 
-    // Fetch owner name
     console.log("========== OWNER DEBUG ==========");
     console.log("FULL REQUEST BODY:", JSON.stringify(req.body, null, 2));
 
