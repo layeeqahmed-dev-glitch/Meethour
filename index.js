@@ -601,6 +601,7 @@ app.get('/callback', async (req, res) => {
                 objectTypeId: '0-1',
                 fieldType: 'date',
                 required: true,
+                fieldType: 'datepicker',
                 hidden: false,
                 dependentFields: [],
                 validation: { blockedEmailDomains: [], useDefaultBlockList: false }
