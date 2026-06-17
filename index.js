@@ -590,7 +590,7 @@ app.get('/callback', async (req, res) => {
                 fieldType: 'single_line_text',
                 required: true,
                 hidden: false,
-                dependentFields: [],                
+                dependentFields: [],
                 validation: { blockedEmailDomains: [], useDefaultBlockList: false }
               }]
             },
@@ -671,12 +671,12 @@ app.get('/callback', async (req, res) => {
                 hidden: false,
                 dependentFields: [],
                 options: [
-"Etc/GMT+12", "Pacific/Midway", "Pacific/Niue", "America/Adak", "US/Aleutian", "US/Hawaii", "Pacific/Honolulu", "Pacific/Tahiti", "Pacific/Rarotonga", "Pacific/Marquesas", "America/Anchorage", "America/Sitka", "US/Alaska", "America/Nome", "America/Metlakatla", "America/Yakutat", "America/Juneau", "America/Vancouver", "America/Tijuana", "America/Los_Angeles", "Pacific/Pitcairn", "America/Yellowknife", "America/Whitehorse", "America/Inuvik", "America/Phoenix", "Mexico/BajaSur", "America/Hermosillo", "America/Dawson_Creek", "America/Denver", "America/Mazatlan", "America/Ojinaga", "America/Chihuahua", "US/Arizona", "America/Creston", "America/Dawson", "America/Edmonton", "America/Boise", "America/Cambridge_Bay", "Canada/Saskatchewan", "America/Winnipeg", "America/Indiana/Knox", "America/Rainy_River", "America/Rankin_Inlet", "America/Resolute", "America/Indiana/Tell_City", "America/Tegucigalpa", "America/Swift_Current", "America/Regina", "Pacific/Easter", "America/El_Salvador", "America/Costa_Rica", "America/Matamoros", "Pacific/Johnston", "America/North_Dakota/Beulah", "America/North_Dakota/Center", "US/Central", "America/Bahia_Banderas", "America/Mexico_City", "America/Merida", "America/Menominee", "America/North_Dakota/New_Salem", "America/Managua", "Pacific/Galapagos", "America/Guatemala", "Mexico/General", "US/East-Indiana", "America/Belize", "US/Michigan", "America/Indiana/Vincennes", "America/Indiana/Vevay", "America/Toronto", "America/Atikokan", "America/Nipigon", "America/Thunder_Bay", "America/Rio_Branco", "America/Port-au-Prince", "America/Panama", "America/Indiana/Winamac", "America/Indiana/Marengo", "America/New_York", "America/Nassau", "America/Kentucky/Monticello", "America/Monterrey", "America/Kentucky/Louisville", "America/Louisville", "America/Knox_IN", "America/Lima", "America/Jamaica", "US/Eastern", "US/Indiana-Starke", "America/Iqaluit", "America/Indiana/Indianapolis", "America/Indianapolis", "America/Havana", "America/Guayaquil", "America/Cayman", "America/Eirunepe", "America/Detroit", "America/Grand_Turk", "America/Chicago", "America/Cancun", "Atlantic/Bermuda", "America/Curacao", "America/Pangnirtung", "America/Anguilla", "America/Santo_Domingo", "America/Santiago", "America/La_Paz", "America/Puerto_Rico", "America/Antigua", "America/Grenada", "America/St_Thomas", "America/Dominica", "America/Tortola", "America/Porto_Velho", "America/Aruba", "America/Thule", "America/Moncton", "America/Marigot", "America/Manaus", "America/Blanc-Sablon", "America/Guadeloupe", "America/Goose_Bay", "America/Kralendijk", "America/St_Vincent", "America/St_Barthelemy", "America/Guyana", "America/Martinique", "America/Lower_Princes", "America/Cuiaba", "America/Port_of_Spain", "America/St_Lucia", "America/Campo_Grande", "America/Barbados", "America/Montserrat", "America/Bogota", "America/Boa_Vista", "America/St_Kitts", "America/Asuncion", "America/Halifax", "America/Caracas", "America/St_Johns", "Canada/Newfoundland", "America/Argentina/Ushuaia", "America/Sao_Paulo", "America/Santarem", "America/Argentina/Jujuy", "America/Jujuy", "America/Argentina/Tucuman", "America/Argentina/San_Luis", "America/Argentina/San_Juan", "America/Argentina/Catamarca", "America/Bahia", "America/Argentina/Salta", "America/Miquelon", "America/Recife", "America/Paramaribo", "America/Araguaina", "America/Godthab", "America/Montevideo", "America/Argentina/Mendoza", "America/Mendoza", "America/Maceio", "America/Argentina/Buenos_Aires", "America/Buenos_Aires", "America/Belem", "Antarctica/Palmer", "Antarctica/Rothera", "Atlantic/Stanley", "America/Cayenne", "America/Noronha", "Atlantic/South_Georgia", "Atlantic/Azores", "America/Scoresbysund", "Atlantic/Cape_Verde", "America/Danmarkshavn", "Atlantic/St_Helena", "Atlantic/Faeroe", "Etc/Greenwich", "Africa/Abidjan", "Africa/Accra", "Atlantic/Faroe", "Antarctica/Troll", "Africa/Bamako", "Africa/Bissau", "Africa/Conakry", "Africa/Casablanca", "Africa/Dakar", "Europe/Isle_of_Man", "Europe/Dublin", "Africa/Freetown", "Atlantic/Madeira", "Africa/El_Aaiun", "Atlantic/Canary", "Europe/Jersey", "Europe/Lisbon", "Africa/Lome", "Europe/London", "UTC", "Africa/Monrovia", "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Timbuktu", "Atlantic/Reykjavik", "Europe/Guernsey", "Africa/Sao_Tome", "Europe/Oslo", "Europe/Paris", "Europe/Podgorica", "Europe/Prague", "Europe/Rome", "Europe/Sarajevo", "Europe/San_Marino", "Africa/Algiers", "Europe/Amsterdam", "Europe/Andorra", "Africa/Malabo", "Europe/Belgrade", "Europe/Berlin", "Europe/Malta", "Europe/Bratislava", "Africa/Brazzaville", "Europe/Brussels", "Europe/Budapest", "Africa/Ceuta", "Europe/Copenhagen", "Africa/Porto-Novo", "Africa/Douala", "Europe/Gibraltar", "Africa/Kinshasa", "Africa/Lagos", "Africa/Libreville", "Europe/Ljubljana", "Arctic/Longyearbyen", "Africa/Luanda", "Europe/Luxembourg", "Europe/Madrid", "Europe/Monaco", "Africa/Ndjamena", "Africa/Niamey", "Europe/Vaduz", "Europe/Skopje", "Europe/Stockholm", "Europe/Tirane", "Africa/Tunis", "Europe/Vatican", "Europe/Vienna", "Europe/Warsaw", "Africa/Windhoek", "Europe/Zagreb", "Europe/Zurich", "Africa/Bangui", "Europe/Riga", "Asia/Damascus", "Asia/Amman", "Europe/Athens", "Asia/Beirut", "Europe/Bucharest", "Africa/Bujumbura", "Africa/Cairo", "Africa/Johannesburg", "Europe/Chisinau", "Europe/Tiraspol", "Asia/Hebron", "Africa/Gaborone", "Asia/Gaza", "Africa/Harare", "Europe/Helsinki", "Asia/Jerusalem", "Africa/Juba", "Africa/Khartoum", "Africa/Kigali", "Europe/Kiev", "Europe/Kaliningrad", "Africa/Blantyre", "Africa/Lubumbashi", "Europe/Zaporozhye", "Africa/Lusaka", "Africa/Mbabane", "Africa/Maputo", "Europe/Mariehamn", "Africa/Maseru", "Asia/Nicosia", "Europe/Sofia", "Europe/Tallinn", "Africa/Tripoli", "Europe/Uzhgorod", "Europe/Vilnius", "Africa/Mogadishu", "Europe/Moscow", "Asia/Kuwait", "Indian/Antananarivo", "Antarctica/Syowa", "Africa/Asmara", "Asia/Baghdad", "Africa/Dar_es_Salaam", "Africa/Djibouti", "Asia/Qatar", "Israel", "Europe/Istanbul", "Turkey", "Africa/Kampala", "Indian/Mayotte", "Asia/Bahrain", "Europe/Minsk", "Indian/Comoro", "Africa/Nairobi", "Africa/Addis_Ababa", "Asia/Riyadh", "Asia/Aden", "Europe/Simferopol", "Asia/Istanbul", "Europe/Volgograd", "Asia/Tehran", "Europe/Samara", "Asia/Baku", "Asia/Dubai", "Canada/Atlantic", "Asia/Muscat", "Indian/Mauritius", "Indian/Reunion", "Asia/Tbilisi", "Indian/Mahe", "Asia/Yerevan", "Asia/Kabul", "Asia/Aqtobe", "Antarctica/Mawson", "Asia/Ashgabat", "Asia/Ashkhabad", "Asia/Dushanbe", "Asia/Karachi", "Asia/Qyzylorda", "Indian/Maldives", "Asia/Oral", "Asia/Aqtau", "Asia/Tashkent", "Asia/Yekaterinburg", "Asia/Colombo", "Asia/Dacca", "Asia/Calcutta", "Asia/Kolkata", "Asia/Katmandu", "Asia/Kathmandu", "Asia/Almaty", "Antarctica/Vostok", "Asia/Bishkek", "Indian/Chagos", "Asia/Dhaka", "Asia/Omsk", "Asia/Thimbu", "Asia/Thimphu", "Asia/Urumqi", "Indian/Cocos", "Asia/Rangoon", "Antarctica/Casey", "Antarctica/Davis", "Asia/Bangkok", "Indian/Christmas", "Asia/Ho_Chi_Minh", "Asia/Jakarta", "Asia/Hovd", "Asia/Krasnoyarsk", "Asia/Novokuznetsk", "Asia/Novosibirsk", "Asia/Phnom_Penh", "US/Mountain", "Asia/Pontianak", "Asia/Vientiane", "Asia/Brunei", "Asia/Choibalsan", "Asia/Hong_Kong", "Asia/Irkutsk", "Asia/Kuala_Lumpur", "Asia/Shanghai", "Asia/Kuching", "US/Pacific", "Asia/Macao", "Asia/Macau", "Asia/Makassar", "Australia/Perth", "Asia/Manila", "Singapore", "Asia/Singapore", "Australia/Sydney", "Asia/Taipei", "Asia/Ulaanbaatar", "Australia/Eucla", "Asia/Jayapura", "Asia/Chita", "Asia/Dili", "Pacific/Palau", "Asia/Khandyga", "Asia/Pyongyang", "Asia/Seoul", "Asia/Tokyo", "Asia/Yakutsk", "Australia/Broken_Hill", "Australia/Adelaide", "Australia/Darwin", "Australia/Lindeman", "Australia/Brisbane", "Australia/Canberra", "Antarctica/DumontDUrville", "Pacific/Yap", "Pacific/Guam", "Australia/Hobart", "Pacific/Port_Moresby", "Pacific/Saipan", "Australia/Currie", "Antarctica/Macquarie", "Asia/Vladivostok", "Pacific/Chuuk", "Australia/Lord_Howe", "Australia/LHI", "Pacific/Guadalcanal", "Pacific/Gambier", "Pacific/Norfolk", "Pacific/Pohnpei", "Asia/Magadan", "Asia/Srednekolymsk", "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Bougainville", "Pacific/Efate", "Pacific/Kosrae", "Asia/Sakhalin", "Asia/Anadyr", "Antarctica/McMurdo", "Pacific/Auckland", "Kwajalein", "Pacific/Funafuti", "Pacific/Kwajalein", "Pacific/Majuro", "Pacific/Wallis", "Asia/Kamchatka", "Pacific/Fiji", "Pacific/Tarawa", "Pacific/Wake", "Pacific/Nauru", "Pacific/Chatham", "Pacific/Apia", "Pacific/Samoa", "Pacific/Fakaofo", "Pacific/Tongatapu", "Pacific/Enderbury", "Pacific/Kiritimati"].map((tz, i) => ({ 
-  label: tz, 
-  value: tz, 
-  displayOrder: i,
-  hidden: false // ✅ ADD KARO
-})),
+                  "Etc/GMT+12", "Pacific/Midway", "Pacific/Niue", "America/Adak", "US/Aleutian", "US/Hawaii", "Pacific/Honolulu", "Pacific/Tahiti", "Pacific/Rarotonga", "Pacific/Marquesas", "America/Anchorage", "America/Sitka", "US/Alaska", "America/Nome", "America/Metlakatla", "America/Yakutat", "America/Juneau", "America/Vancouver", "America/Tijuana", "America/Los_Angeles", "Pacific/Pitcairn", "America/Yellowknife", "America/Whitehorse", "America/Inuvik", "America/Phoenix", "Mexico/BajaSur", "America/Hermosillo", "America/Dawson_Creek", "America/Denver", "America/Mazatlan", "America/Ojinaga", "America/Chihuahua", "US/Arizona", "America/Creston", "America/Dawson", "America/Edmonton", "America/Boise", "America/Cambridge_Bay", "Canada/Saskatchewan", "America/Winnipeg", "America/Indiana/Knox", "America/Rainy_River", "America/Rankin_Inlet", "America/Resolute", "America/Indiana/Tell_City", "America/Tegucigalpa", "America/Swift_Current", "America/Regina", "Pacific/Easter", "America/El_Salvador", "America/Costa_Rica", "America/Matamoros", "Pacific/Johnston", "America/North_Dakota/Beulah", "America/North_Dakota/Center", "US/Central", "America/Bahia_Banderas", "America/Mexico_City", "America/Merida", "America/Menominee", "America/North_Dakota/New_Salem", "America/Managua", "Pacific/Galapagos", "America/Guatemala", "Mexico/General", "US/East-Indiana", "America/Belize", "US/Michigan", "America/Indiana/Vincennes", "America/Indiana/Vevay", "America/Toronto", "America/Atikokan", "America/Nipigon", "America/Thunder_Bay", "America/Rio_Branco", "America/Port-au-Prince", "America/Panama", "America/Indiana/Winamac", "America/Indiana/Marengo", "America/New_York", "America/Nassau", "America/Kentucky/Monticello", "America/Monterrey", "America/Kentucky/Louisville", "America/Louisville", "America/Knox_IN", "America/Lima", "America/Jamaica", "US/Eastern", "US/Indiana-Starke", "America/Iqaluit", "America/Indiana/Indianapolis", "America/Indianapolis", "America/Havana", "America/Guayaquil", "America/Cayman", "America/Eirunepe", "America/Detroit", "America/Grand_Turk", "America/Chicago", "America/Cancun", "Atlantic/Bermuda", "America/Curacao", "America/Pangnirtung", "America/Anguilla", "America/Santo_Domingo", "America/Santiago", "America/La_Paz", "America/Puerto_Rico", "America/Antigua", "America/Grenada", "America/St_Thomas", "America/Dominica", "America/Tortola", "America/Porto_Velho", "America/Aruba", "America/Thule", "America/Moncton", "America/Marigot", "America/Manaus", "America/Blanc-Sablon", "America/Guadeloupe", "America/Goose_Bay", "America/Kralendijk", "America/St_Vincent", "America/St_Barthelemy", "America/Guyana", "America/Martinique", "America/Lower_Princes", "America/Cuiaba", "America/Port_of_Spain", "America/St_Lucia", "America/Campo_Grande", "America/Barbados", "America/Montserrat", "America/Bogota", "America/Boa_Vista", "America/St_Kitts", "America/Asuncion", "America/Halifax", "America/Caracas", "America/St_Johns", "Canada/Newfoundland", "America/Argentina/Ushuaia", "America/Sao_Paulo", "America/Santarem", "America/Argentina/Jujuy", "America/Jujuy", "America/Argentina/Tucuman", "America/Argentina/San_Luis", "America/Argentina/San_Juan", "America/Argentina/Catamarca", "America/Bahia", "America/Argentina/Salta", "America/Miquelon", "America/Recife", "America/Paramaribo", "America/Araguaina", "America/Godthab", "America/Montevideo", "America/Argentina/Mendoza", "America/Mendoza", "America/Maceio", "America/Argentina/Buenos_Aires", "America/Buenos_Aires", "America/Belem", "Antarctica/Palmer", "Antarctica/Rothera", "Atlantic/Stanley", "America/Cayenne", "America/Noronha", "Atlantic/South_Georgia", "Atlantic/Azores", "America/Scoresbysund", "Atlantic/Cape_Verde", "America/Danmarkshavn", "Atlantic/St_Helena", "Atlantic/Faeroe", "Etc/Greenwich", "Africa/Abidjan", "Africa/Accra", "Atlantic/Faroe", "Antarctica/Troll", "Africa/Bamako", "Africa/Bissau", "Africa/Conakry", "Africa/Casablanca", "Africa/Dakar", "Europe/Isle_of_Man", "Europe/Dublin", "Africa/Freetown", "Atlantic/Madeira", "Africa/El_Aaiun", "Atlantic/Canary", "Europe/Jersey", "Europe/Lisbon", "Africa/Lome", "Europe/London", "UTC", "Africa/Monrovia", "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Timbuktu", "Atlantic/Reykjavik", "Europe/Guernsey", "Africa/Sao_Tome", "Europe/Oslo", "Europe/Paris", "Europe/Podgorica", "Europe/Prague", "Europe/Rome", "Europe/Sarajevo", "Europe/San_Marino", "Africa/Algiers", "Europe/Amsterdam", "Europe/Andorra", "Africa/Malabo", "Europe/Belgrade", "Europe/Berlin", "Europe/Malta", "Europe/Bratislava", "Africa/Brazzaville", "Europe/Brussels", "Europe/Budapest", "Africa/Ceuta", "Europe/Copenhagen", "Africa/Porto-Novo", "Africa/Douala", "Europe/Gibraltar", "Africa/Kinshasa", "Africa/Lagos", "Africa/Libreville", "Europe/Ljubljana", "Arctic/Longyearbyen", "Africa/Luanda", "Europe/Luxembourg", "Europe/Madrid", "Europe/Monaco", "Africa/Ndjamena", "Africa/Niamey", "Europe/Vaduz", "Europe/Skopje", "Europe/Stockholm", "Europe/Tirane", "Africa/Tunis", "Europe/Vatican", "Europe/Vienna", "Europe/Warsaw", "Africa/Windhoek", "Europe/Zagreb", "Europe/Zurich", "Africa/Bangui", "Europe/Riga", "Asia/Damascus", "Asia/Amman", "Europe/Athens", "Asia/Beirut", "Europe/Bucharest", "Africa/Bujumbura", "Africa/Cairo", "Africa/Johannesburg", "Europe/Chisinau", "Europe/Tiraspol", "Asia/Hebron", "Africa/Gaborone", "Asia/Gaza", "Africa/Harare", "Europe/Helsinki", "Asia/Jerusalem", "Africa/Juba", "Africa/Khartoum", "Africa/Kigali", "Europe/Kiev", "Europe/Kaliningrad", "Africa/Blantyre", "Africa/Lubumbashi", "Europe/Zaporozhye", "Africa/Lusaka", "Africa/Mbabane", "Africa/Maputo", "Europe/Mariehamn", "Africa/Maseru", "Asia/Nicosia", "Europe/Sofia", "Europe/Tallinn", "Africa/Tripoli", "Europe/Uzhgorod", "Europe/Vilnius", "Africa/Mogadishu", "Europe/Moscow", "Asia/Kuwait", "Indian/Antananarivo", "Antarctica/Syowa", "Africa/Asmara", "Asia/Baghdad", "Africa/Dar_es_Salaam", "Africa/Djibouti", "Asia/Qatar", "Israel", "Europe/Istanbul", "Turkey", "Africa/Kampala", "Indian/Mayotte", "Asia/Bahrain", "Europe/Minsk", "Indian/Comoro", "Africa/Nairobi", "Africa/Addis_Ababa", "Asia/Riyadh", "Asia/Aden", "Europe/Simferopol", "Asia/Istanbul", "Europe/Volgograd", "Asia/Tehran", "Europe/Samara", "Asia/Baku", "Asia/Dubai", "Canada/Atlantic", "Asia/Muscat", "Indian/Mauritius", "Indian/Reunion", "Asia/Tbilisi", "Indian/Mahe", "Asia/Yerevan", "Asia/Kabul", "Asia/Aqtobe", "Antarctica/Mawson", "Asia/Ashgabat", "Asia/Ashkhabad", "Asia/Dushanbe", "Asia/Karachi", "Asia/Qyzylorda", "Indian/Maldives", "Asia/Oral", "Asia/Aqtau", "Asia/Tashkent", "Asia/Yekaterinburg", "Asia/Colombo", "Asia/Dacca", "Asia/Calcutta", "Asia/Kolkata", "Asia/Katmandu", "Asia/Kathmandu", "Asia/Almaty", "Antarctica/Vostok", "Asia/Bishkek", "Indian/Chagos", "Asia/Dhaka", "Asia/Omsk", "Asia/Thimbu", "Asia/Thimphu", "Asia/Urumqi", "Indian/Cocos", "Asia/Rangoon", "Antarctica/Casey", "Antarctica/Davis", "Asia/Bangkok", "Indian/Christmas", "Asia/Ho_Chi_Minh", "Asia/Jakarta", "Asia/Hovd", "Asia/Krasnoyarsk", "Asia/Novokuznetsk", "Asia/Novosibirsk", "Asia/Phnom_Penh", "US/Mountain", "Asia/Pontianak", "Asia/Vientiane", "Asia/Brunei", "Asia/Choibalsan", "Asia/Hong_Kong", "Asia/Irkutsk", "Asia/Kuala_Lumpur", "Asia/Shanghai", "Asia/Kuching", "US/Pacific", "Asia/Macao", "Asia/Macau", "Asia/Makassar", "Australia/Perth", "Asia/Manila", "Singapore", "Asia/Singapore", "Australia/Sydney", "Asia/Taipei", "Asia/Ulaanbaatar", "Australia/Eucla", "Asia/Jayapura", "Asia/Chita", "Asia/Dili", "Pacific/Palau", "Asia/Khandyga", "Asia/Pyongyang", "Asia/Seoul", "Asia/Tokyo", "Asia/Yakutsk", "Australia/Broken_Hill", "Australia/Adelaide", "Australia/Darwin", "Australia/Lindeman", "Australia/Brisbane", "Australia/Canberra", "Antarctica/DumontDUrville", "Pacific/Yap", "Pacific/Guam", "Australia/Hobart", "Pacific/Port_Moresby", "Pacific/Saipan", "Australia/Currie", "Antarctica/Macquarie", "Asia/Vladivostok", "Pacific/Chuuk", "Australia/Lord_Howe", "Australia/LHI", "Pacific/Guadalcanal", "Pacific/Gambier", "Pacific/Norfolk", "Pacific/Pohnpei", "Asia/Magadan", "Asia/Srednekolymsk", "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Bougainville", "Pacific/Efate", "Pacific/Kosrae", "Asia/Sakhalin", "Asia/Anadyr", "Antarctica/McMurdo", "Pacific/Auckland", "Kwajalein", "Pacific/Funafuti", "Pacific/Kwajalein", "Pacific/Majuro", "Pacific/Wallis", "Asia/Kamchatka", "Pacific/Fiji", "Pacific/Tarawa", "Pacific/Wake", "Pacific/Nauru", "Pacific/Chatham", "Pacific/Apia", "Pacific/Samoa", "Pacific/Fakaofo", "Pacific/Tongatapu", "Pacific/Enderbury", "Pacific/Kiritimati"].map((tz, i) => ({
+                    label: tz,
+                    value: tz,
+                    displayOrder: i,
+                    hidden: false // ✅ ADD KARO
+                  })),
                 validation: { blockedEmailDomains: [], useDefaultBlockList: false }
               }]
             }
@@ -1413,9 +1413,653 @@ app.post("/update-meeting", async (req, res) => {
   }
 });
 
+
+//form meeting
+// ======================================================
+// FORM WEBHOOK ROUTE
+// ======================================================
+
+app.post("/form-webhook", async (req, res) => {
+  try {
+    console.log("===== FORM WEBHOOK =====");
+
+    console.log(
+      "BODY:",
+      JSON.stringify(req.body, null, 2)
+    );
+
+    await connectDB();
+
+    // ======================================================
+    // HUBSPOT DEFAULT WEBHOOK STRUCTURE
+    // ======================================================
+
+    const fields = req.body.fields || {};
+
+    const email =
+      fields.email ||
+      req.body.email ||
+      "";
+
+    const firstname =
+      fields.firstname ||
+      req.body.firstname ||
+      "";
+
+    const lastname =
+      fields.lastname ||
+      req.body.lastname ||
+      "";
+
+    const meeting_name =
+      fields.meeting_name ||
+      "MeetHour Meeting";
+
+    const rawDate =
+      fields.meeting_date ||
+      req.body.meeting_date;
+
+    const rawTime =
+      fields.meeting_time ||
+      req.body.meeting_time;
+
+    const timezone =
+      fields.timezone ||
+      req.body.timezone ||
+      "UTC";
+
+    let meeting_meridiem =
+      fields.meeting_meridiem ||
+      req.body.meeting_meridiem ||
+      "AM";
+
+    console.log("EMAIL:", email);
+    console.log("DATE:", rawDate);
+    console.log("TIME:", rawTime);
+
+    // ======================================================
+    // DATE FORMAT
+    // OUTPUT:
+    // 2026-06-17
+    // ======================================================
+
+    let meeting_date = rawDate;
+
+    try {
+      const dateObj = new Date(rawDate);
+
+      const yyyy =
+        dateObj.getUTCFullYear();
+
+      const mm = String(
+        dateObj.getUTCMonth() + 1
+      ).padStart(2, "0");
+
+      const dd = String(
+        dateObj.getUTCDate()
+      ).padStart(2, "0");
+
+      meeting_date = `${yyyy}-${mm}-${dd}`;
+
+    } catch (e) {
+      console.log("DATE FORMAT ERROR");
+    }
+
+    // ======================================================
+    // TIME FORMAT
+    // OUTPUT:
+    // 04:00
+    // ======================================================
+
+    let meeting_time = rawTime;
+
+    if (
+      rawTime &&
+      rawTime.includes(":")
+    ) {
+      const [strHours, strMinutes] =
+        rawTime.split(":");
+
+      let hours = parseInt(
+        strHours,
+        10
+      );
+
+      if (hours >= 12) {
+        meeting_meridiem = "PM";
+
+        if (hours > 12) {
+          hours -= 12;
+        }
+
+      } else if (hours === 0) {
+        hours = 12;
+
+        meeting_meridiem = "AM";
+      }
+
+      meeting_time = `${String(
+        hours
+      ).padStart(2, "0")}:${strMinutes}`;
+    }
+
+    console.log(
+      "FINAL DATE:",
+      meeting_date
+    );
+
+    console.log(
+      "FINAL TIME:",
+      meeting_time
+    );
+
+    console.log(
+      "FINAL MERIDIEM:",
+      meeting_meridiem
+    );
+
+    // ======================================================
+    // FIND CUSTOMER TOKEN
+    // ======================================================
+
+    const portalId =
+      req.body.portalId ||
+      req.body.objectId ||
+      req.body.portal_id;
+
+    console.log("PORTAL ID:", portalId);
+
+    const tokenRecord =
+      await Token.findOne({
+        hubspotPortalId: portalId
+      });
+
+    if (
+      !tokenRecord ||
+      !tokenRecord.meethourAccessToken
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "MeetHour token not found"
+      });
+    }
+
+    const meethourToken =
+      tokenRecord.meethourAccessToken;
+
+    const meethourUserId =
+      tokenRecord.meethourUserId;
+
+    // ======================================================
+    // CREATE ATTENDEE
+    // ======================================================
+
+    const attend = [
+      {
+        first_name: firstname,
+        last_name: lastname,
+        email
+      }
+    ];
+
+    // ======================================================
+    // CREATE MEETHOUR PAYLOAD
+    // ======================================================
+
+    const payload = {
+      meeting_name,
+
+      meeting_date,
+
+      meeting_time,
+
+      meeting_meridiem,
+
+      timezone,
+
+      passcode: generatePasscode(),
+
+      attend,
+
+      send_calendar_invite: 1,
+
+      duration_hr: 1,
+
+      duration_min: 0,
+
+      hostusers: meethourUserId
+        ? [Number(meethourUserId)]
+        : []
+    };
+
+    console.log(
+      "MEETHOUR PAYLOAD:",
+      JSON.stringify(payload, null, 2)
+    );
+
+    // ======================================================
+    // CREATE MEETING
+    // ======================================================
+
+    const meetingRes = await axios.post(
+      "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
+      payload,
+      {
+        headers: {
+          Authorization:
+            `Bearer ${meethourToken}`,
+
+          "Content-Type":
+            "application/json"
+        }
+      }
+    );
+
+    console.log(
+      "MEETING CREATED!"
+    );
+
+    const meeting =
+      meetingRes.data.data;
+
+    // ======================================================
+    // CREATE HUBSPOT MEETING ACTIVITY
+    // ======================================================
+
+    const hubspotToken =
+      await refreshHubspotToken(
+        portalId
+      );
+
+    const contactId =
+      req.body.objectId;
+
+    if (contactId) {
+      try {
+        await axios.post(
+          "https://api.hubapi.com/crm/v3/objects/meetings",
+          {
+            properties: {
+              hs_timestamp:
+                new Date().toISOString(),
+
+              hs_meeting_title:
+                meeting_name,
+
+              hs_meeting_body:
+                `Join URL: ${meeting.joinURL}`,
+
+              hs_meeting_external_url:
+                meeting.joinURL
+            },
+
+            associations: [
+              {
+                to: {
+                  id: contactId
+                },
+
+                types: [
+                  {
+                    associationCategory:
+                      "HUBSPOT_DEFINED",
+
+                    associationTypeId: 200
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            headers: {
+              Authorization:
+                `Bearer ${hubspotToken}`,
+
+              "Content-Type":
+                "application/json"
+            }
+          }
+        );
+
+        console.log(
+          "HUBSPOT ACTIVITY CREATED!"
+        );
+
+      } catch (activityErr) {
+        console.log(
+          "ACTIVITY ERROR:",
+          activityErr.response?.data ||
+          activityErr.message
+        );
+      }
+    }
+
+    return res.json({
+      success: true,
+
+      joinURL: meeting.joinURL,
+
+      meetingId:
+        meeting.meeting_id
+    });
+
+  } catch (err) {
+    console.log(
+      "FORM WEBHOOK ERROR:",
+      err.response?.data ||
+      err.message
+    );
+
+    return res.status(500).json({
+      success: false,
+
+      error:
+        err.response?.data ||
+        err.message
+    });
+  }
+});
+
+
+// ======================================================
+// CREATE FORM + WORKFLOW FUNCTION
+// ======================================================
+
+async function setupMeetHourHubSpot(
+  portalId,
+  accessToken
+) {
+  try {
+    console.log(
+      "===== STARTING HUBSPOT SETUP ====="
+    );
+
+    // ======================================================
+    // CREATE FORM
+    // ======================================================
+
+    const formPayload = {
+      name:
+        "MeetHour Meeting Scheduler",
+
+      configuration: {
+        submitText:
+          "Schedule Meeting"
+      },
+
+      displayOptions: {
+        theme: "default"
+      },
+
+      fields: [
+        {
+          objectTypeId: "0-1",
+
+          name: "firstname",
+
+          label: "First Name",
+
+          fieldType:
+            "single_line_text"
+        },
+
+        {
+          objectTypeId: "0-1",
+
+          name: "lastname",
+
+          label: "Last Name",
+
+          fieldType:
+            "single_line_text"
+        },
+
+        {
+          objectTypeId: "0-1",
+
+          name: "email",
+
+          label: "Email",
+
+          fieldType: "email"
+        },
+
+        {
+          objectTypeId: "0-1",
+
+          name: "meeting_name",
+
+          label: "Meeting Name",
+
+          fieldType:
+            "single_line_text"
+        },
+
+        {
+          objectTypeId: "0-1",
+
+          name: "meeting_date",
+
+          label: "Meeting Date",
+
+          fieldType:
+            "datepicker"
+        },
+
+        {
+          objectTypeId: "0-1",
+
+          name: "meeting_time",
+
+          label: "Meeting Time",
+
+          fieldType:
+            "single_line_text"
+        },
+
+        {
+          objectTypeId: "0-1",
+
+          name:
+            "meeting_meridiem",
+
+          label:
+            "Meeting Meridiem",
+
+          fieldType: "dropdown",
+
+          options: [
+            {
+              label: "AM",
+              value: "AM"
+            },
+
+            {
+              label: "PM",
+              value: "PM"
+            }
+          ]
+        },
+
+        {
+          objectTypeId: "0-1",
+
+          name: "timezone",
+
+          label: "Timezone",
+
+          fieldType:
+            "single_line_text"
+        }
+      ]
+    };
+
+    const formRes = await axios.post(
+      "https://api.hubapi.com/marketing/v3/forms",
+      formPayload,
+      {
+        headers: {
+          Authorization:
+            `Bearer ${accessToken}`,
+
+          "Content-Type":
+            "application/json"
+        }
+      }
+    );
+
+    console.log(
+      "FORM CREATED!"
+    );
+
+    const formId =
+      formRes.data.id;
+
+    console.log(
+      "FORM ID:",
+      formId
+    );
+
+    // ======================================================
+    // CREATE WORKFLOW
+    // ======================================================
+
+    const workflowPayload = {
+      name:
+        "MeetHour Workflow",
+
+      type: "CONTACT_FLOW",
+
+      objectTypeId: "0-1",
+
+      isEnabled: true,
+
+      actions: [
+        {
+          actionId: "1",
+
+          type: "WEBHOOK",
+
+          method: "POST",
+
+          webhookUrl:
+            "https://meethourhubs.vercel.app/form-webhook",
+
+          queryParams: []
+        }
+      ],
+
+      enrollmentCriteria: {
+        shouldReEnroll: false,
+
+        type: "EVENT_BASED",
+
+        eventFilterBranches: [
+          {
+            eventTypeId:
+              "4-1639801",
+
+            operator:
+              "HAS_COMPLETED",
+
+            filterBranchType:
+              "UNIFIED_EVENTS",
+
+            filterBranchOperator:
+              "AND",
+
+            filterBranches: [],
+
+            filters: [
+              {
+                property:
+                  "hs_form_id",
+
+                filterType:
+                  "PROPERTY",
+
+                operation: {
+                  operator:
+                    "IS_ANY_OF",
+
+                  includeObjectsWithNoValueSet:
+                    false,
+
+                  operationType:
+                    "ENUMERATION",
+
+                  values: [formId]
+                }
+              }
+            ]
+          }
+        ],
+
+        listMembershipFilterBranches:
+          []
+      }
+    };
+
+    const workflowRes =
+      await axios.post(
+        "https://api.hubapi.com/automation/v4/flows",
+        workflowPayload,
+        {
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+
+            "Content-Type":
+              "application/json"
+          }
+        }
+      );
+
+    console.log(
+      "WORKFLOW CREATED!"
+    );
+
+    console.log(
+      JSON.stringify(
+        workflowRes.data,
+        null,
+        2
+      )
+    );
+
+    return {
+      success: true,
+
+      formId,
+
+      workflowId:
+        workflowRes.data.id
+    };
+
+  } catch (err) {
+    console.log(
+      "SETUP ERROR:",
+      err.response?.data ||
+      err.message
+    );
+
+    return {
+      success: false,
+
+      error:
+        err.response?.data ||
+        err.message
+    };
+  }
+}
+
+
+
+
 app.get("/test-refresh-token", async (req, res) => {
   try {
-    await connectDB(); // ✅ PEHLE YEH
+    await connectDB(); // PEHLE YEH
     const token = await refreshHubspotToken(246208918);
     console.log("Fresh token:", token);
     res.json({ token });
