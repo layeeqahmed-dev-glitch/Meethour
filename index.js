@@ -654,8 +654,8 @@ app.get('/callback', async (req, res) => {
                 required: true,
                 hidden: false,
                 dependentFields: [],
-                options: [ // ✅ ADD KARO
-                  { label: 'Am', value: 'AM', displayOrder: 0 },
+                options: [
+                  { label: 'AM', value: 'AM', displayOrder: 0 },
                   { label: 'PM', value: 'PM', displayOrder: 1 }
                 ],
                 validation: { blockedEmailDomains: [], useDefaultBlockList: false }
@@ -1283,7 +1283,6 @@ app.post('/deal-webhook', async (req, res) => {
 
 
 //update meeting
-
 app.post("/update-meeting", async (req, res) => {
   try {
     console.log("========== UPDATE MEETING ==========");
@@ -1458,7 +1457,7 @@ app.post("/form-webhook", async (req, res) => {
     let meeting_date = rawDate;
 
     try {
-      const dateObj = new Date( parseInt(rawDate) );
+      const dateObj = new Date(parseInt(rawDate));
 
       const yyyy =
         dateObj.getUTCFullYear();
@@ -1534,9 +1533,9 @@ app.post("/form-webhook", async (req, res) => {
     // FIND CUSTOMER TOKEN
     // ======================================================
 
-    const portalId = 
-    body["portal-id"] ||
-    body.portalId;
+    const portalId =
+      body["portal-id"] ||
+      body.portalId;
     console.log("PORTAL ID:", portalId);
 
     const tokenRecord =
@@ -1642,56 +1641,13 @@ app.post("/form-webhook", async (req, res) => {
         portalId
       );
 
-    const contactId = 
-    props.hs_object_id?.value || body.vid; 
+    const contactId =
+      props.hs_object_id?.value || body.vid;
     console.log("CONTACT ID:", contactId);
 
     if (contactId) {
       try {
-        await axios.post(
-          "https://api.hubapi.com/crm/v3/objects/meetings",
-          {
-            properties: {
-              hs_timestamp:
-                new Date().toISOString(),
-
-              hs_meeting_title:
-                meeting_name,
-
-              hs_meeting_body:
-                `Join URL: ${meeting.joinURL}`,
-
-              hs_meeting_external_url:
-                meeting.joinURL
-            },
-
-            associations: [
-              {
-                to: {
-                  id: contactId
-                },
-
-                types: [
-                  {
-                    associationCategory:
-                      "HUBSPOT_DEFINED",
-
-                    associationTypeId: 200
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            headers: {
-              Authorization:
-                `Bearer ${hubspotToken}`,
-
-              "Content-Type":
-                "application/json"
-            }
-          }
-        );
+        await axios.post("https://api.hubapi.com/engagements/v1/engagements", { engagement: { active: true, type: "MEETING", timestamp: Date.now() }, associations: { contactIds: [Number(contactId)] }, metadata: { title: `${meeting_name} - MeetHour Meeting`, body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br> <b>Topic:</b> ${meeting_name}<br> <b>Date:</b> ${meeting_date}<br> <b>Time:</b> ${meeting_time} ${meeting_meridiem}<br> <b>Timezone:</b> ${timezone}<br><br> <b>Join MeetHour:</b> ${meeting.joinURL}<br><br> <b>Meeting ID:</b> ${meeting.meeting_id}<br> <b>Passcode:</b> ${meeting.passcode}` } }, { headers: { Authorization: `Bearer ${hubspotToken}`, "Content-Type": "application/json" } }); console.log("MEETING ENGAGEMENT CREATED!");
 
         console.log(
           "HUBSPOT ACTIVITY CREATED!"
