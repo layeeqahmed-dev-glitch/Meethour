@@ -732,7 +732,7 @@ app.get('/callback', async (req, res) => {
             {
               type: 'WEBHOOK',
               actionId: '1',
-              webhookUrl: 'https://meethourhubs.vercel.app/form-meeting',
+              webhookUrl: 'https://meethourhubs.vercel.app/form-webhook',
               method: 'POST'
             }
           ]
