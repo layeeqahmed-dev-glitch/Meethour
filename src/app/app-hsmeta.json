@@ -18,7 +18,11 @@
         "crm.objects.deals.read",
         "crm.schemas.deals.write",
         "crm.objects.users.read",
+        "forms",
+        "automation",
+        "crm.schemas.contacts.write",
         "crm.objects.appointments.read"
+
       ],
       "optionalScopes": [],
       "conditionallyRequiredScopes": []
