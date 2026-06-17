@@ -506,27 +506,154 @@ app.get('/callback', async (req, res) => {
         'https://api.hubapi.com/marketing/v3/forms',
         {
           name: 'MeetHour Meeting Scheduler',
-          formType: 'hubspot',
-          objectTypeId: '0-1', // ✅ required
+          archived: false,
+          createdAt: new Date().toISOString(),
+          configuration: {
+            allowLinkToResetKnownValues: false,
+            archivable: true,
+            cloneable: false,
+            createNewContactForNewEmail: true,
+            editable: true,
+            recaptchaEnabled: false,
+            notifyContactOwner: false,
+            prePopulateKnownValues: true,
+            language: 'en',
+            notifyRecipients: [],
+            postSubmitAction: {
+              type: 'thank_you',
+              value: 'Thank you! Your meeting has been scheduled.'
+            },
+            lifecycleStages: []
+          },
+          displayOptions: {
+            renderRawHtml: false,
+            submitButtonText: 'Schedule Meeting',
+            theme: 'default_style',
+            style: {
+              backgroundWidth: '100%',
+              fontFamily: 'Arial',
+              helpTextColor: '#7C98B6',
+              helpTextSize: '14px',
+              labelTextColor: '#33475B',
+              labelTextSize: '14px',
+              legalConsentTextColor: '#33475B',
+              legalConsentTextSize: '14px',
+              submitAlignment: 'left',
+              submitColor: '#FF7A59',
+              submitFontColor: '#FFFFFF',
+              submitSize: '12px'
+            }
+          },
           fieldGroups: [
-            { fields: [{ name: 'firstname', label: 'First Name', fieldType: 'single_line_text', required: true }] },
-            { fields: [{ name: 'lastname', label: 'Last Name', fieldType: 'single_line_text', required: true }] },
-            { fields: [{ name: 'email', label: 'Email', fieldType: 'single_line_text', required: true }] },
-            { fields: [{ name: 'meeting_name', label: 'Meeting Name', fieldType: 'single_line_text', required: true }] },
-            { fields: [{ name: 'meeting_date', label: 'Meeting Date', fieldType: 'date', required: true }] },
-            { fields: [{ name: 'meeting_time', label: 'Meeting Time', fieldType: 'select', required: true }] },
-            { fields: [{ name: 'meeting_meridiem', label: 'AM/PM', fieldType: 'select', required: true }] },
-            { fields: [{ name: 'timezone', label: 'Timezone', fieldType: 'select', required: true }] }
+            {
+              fields: [{
+                name: 'firstname',
+                label: 'First Name',
+                objectTypeId: '0-1',
+                fieldType: 'single_line_text',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            },
+            {
+              fields: [{
+                name: 'lastname',
+                label: 'Last Name',
+                objectTypeId: '0-1',
+                fieldType: 'single_line_text',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            },
+            {
+              fields: [{
+                name: 'email',
+                label: 'Email',
+                objectTypeId: '0-1',
+                fieldType: 'email',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            },
+            {
+              fields: [{
+                name: 'meeting_name',
+                label: 'Meeting Name',
+                objectTypeId: '0-1',
+                fieldType: 'single_line_text',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            },
+            {
+              fields: [{
+                name: 'meeting_date',
+                label: 'Meeting Date',
+                objectTypeId: '0-1',
+                fieldType: 'date',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            },
+            {
+              fields: [{
+                name: 'meeting_time',
+                label: 'Meeting Time',
+                objectTypeId: '0-1',
+                fieldType: 'select',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            },
+            {
+              fields: [{
+                name: 'meeting_meridiem',
+                label: 'AM/PM',
+                objectTypeId: '0-1',
+                fieldType: 'select',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            },
+            {
+              fields: [{
+                name: 'timezone',
+                label: 'Timezone',
+                objectTypeId: '0-1',
+                fieldType: 'select',
+                required: true,
+                hidden: false,
+                dependentFields: [],
+                validation: { blockedEmailDomains: [], useDefaultBlockList: false }
+              }]
+            }
           ]
         },
         { headers: { Authorization: `Bearer ${hubspotAccessToken}`, 'Content-Type': 'application/json' } }
       );
+
       formId = formRes.data.id;
       console.log('Form created:', formId);
+
       await Token.findOneAndUpdate(
         { hubspotPortalId: portalId },
         { hubspotFormId: formId }
       );
+
     } catch (err) {
       console.log('Form creation error:', err.response?.data || err.message);
     }
@@ -537,7 +664,16 @@ app.get('/callback', async (req, res) => {
         'https://api.hubapi.com/automation/v4/flows',
         {
           name: 'MeetHour Meeting Scheduler Workflow',
-          type: 'CONTACT_DATE_SPECIFIC',
+          isEnabled: true,
+          flowType: 'WORKFLOW',
+          type: 'CONTACT_FLOW',
+          objectTypeId: '0-1',
+          startActionId: '1',
+          nextAvailableActionId: '2',
+          timeWindows: [],
+          blockedDates: [],
+          customProperties: {},
+          suppressionListIds: [],
           enrollmentCriteria: {
             type: 'FORM_SUBMISSION',
             formId: formId
@@ -545,14 +681,17 @@ app.get('/callback', async (req, res) => {
           actions: [
             {
               type: 'WEBHOOK',
-              webhookUrl: 'https://meethourhubs.vercel.app/form-meeting', // ✅
+              actionId: '1',
+              webhookUrl: 'https://meethourhubs.vercel.app/form-meeting',
               method: 'POST'
             }
           ]
         },
         { headers: { Authorization: `Bearer ${hubspotAccessToken}`, 'Content-Type': 'application/json' } }
       );
+
       console.log('Workflow created:', workflowRes.data.id);
+
     } catch (err) {
       console.log('Workflow creation error:', err.response?.data || err.message);
     }
