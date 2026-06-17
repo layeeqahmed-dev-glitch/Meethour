@@ -1434,44 +1434,16 @@ app.post("/form-webhook", async (req, res) => {
     // HUBSPOT DEFAULT WEBHOOK STRUCTURE
     // ======================================================
 
-    const fields = req.body.fields || {};
-
-    const email =
-      fields.email ||
-      req.body.email ||
-      "";
-
-    const firstname =
-      fields.firstname ||
-      req.body.firstname ||
-      "";
-
-    const lastname =
-      fields.lastname ||
-      req.body.lastname ||
-      "";
-
-    const meeting_name =
-      fields.meeting_name ||
-      "MeetHour Meeting";
-
-    const rawDate =
-      fields.meeting_date ||
-      req.body.meeting_date;
-
-    const rawTime =
-      fields.meeting_time ||
-      req.body.meeting_time;
-
-    const timezone =
-      fields.timezone ||
-      req.body.timezone ||
-      "UTC";
-
-    let meeting_meridiem =
-      fields.meeting_meridiem ||
-      req.body.meeting_meridiem ||
-      "AM";
+    const body = req.body || {};
+    const props = body.properties || {};
+    const email = props.email?.value || "";
+    const firstname = props.firstname?.value || "";
+    const lastname = props.lastname?.value || "";
+    const meeting_name = props.meeting_name?.value || "MeetHour Meeting";
+    const rawDate = props.meeting_date?.value;
+    const rawTime = props.meeting_time?.value;
+    const timezone = props.timezone?.value || "UTC";
+    let meeting_meridiem = props.meeting_meridiem?.value || "AM";
 
     console.log("EMAIL:", email);
     console.log("DATE:", rawDate);
@@ -1486,7 +1458,7 @@ app.post("/form-webhook", async (req, res) => {
     let meeting_date = rawDate;
 
     try {
-      const dateObj = new Date(rawDate);
+      const dateObj = new Date( parseInt(rawDate) );
 
       const yyyy =
         dateObj.getUTCFullYear();
@@ -1562,11 +1534,9 @@ app.post("/form-webhook", async (req, res) => {
     // FIND CUSTOMER TOKEN
     // ======================================================
 
-    const portalId =
-      req.body.portalId ||
-      req.body.objectId ||
-      req.body.portal_id;
-
+    const portalId = 
+    body["portal-id"] ||
+    body.portalId;
     console.log("PORTAL ID:", portalId);
 
     const tokenRecord =
@@ -1672,8 +1642,9 @@ app.post("/form-webhook", async (req, res) => {
         portalId
       );
 
-    const contactId =
-      req.body.objectId;
+    const contactId = 
+    props.hs_object_id?.value || body.vid; 
+    console.log("CONTACT ID:", contactId);
 
     if (contactId) {
       try {
@@ -1782,12 +1753,10 @@ async function setupMeetHourHubSpot(
     const formPayload = {
       name:
         "MeetHour Meeting Scheduler",
-
       configuration: {
         submitText:
           "Schedule Meeting"
       },
-
       displayOptions: {
         theme: "default"
       },
@@ -1795,78 +1764,57 @@ async function setupMeetHourHubSpot(
       fields: [
         {
           objectTypeId: "0-1",
-
           name: "firstname",
-
           label: "First Name",
-
           fieldType:
             "single_line_text"
         },
 
         {
           objectTypeId: "0-1",
-
           name: "lastname",
-
           label: "Last Name",
-
           fieldType:
             "single_line_text"
         },
 
         {
           objectTypeId: "0-1",
-
           name: "email",
-
           label: "Email",
-
           fieldType: "email"
         },
 
         {
           objectTypeId: "0-1",
-
           name: "meeting_name",
-
           label: "Meeting Name",
-
           fieldType:
             "single_line_text"
         },
 
         {
           objectTypeId: "0-1",
-
           name: "meeting_date",
-
           label: "Meeting Date",
-
           fieldType:
             "datepicker"
         },
 
         {
           objectTypeId: "0-1",
-
           name: "meeting_time",
-
           label: "Meeting Time",
-
           fieldType:
             "single_line_text"
         },
-
         {
           objectTypeId: "0-1",
 
           name:
             "meeting_meridiem",
-
           label:
             "Meeting Meridiem",
-
           fieldType: "dropdown",
 
           options: [
@@ -1874,7 +1822,6 @@ async function setupMeetHourHubSpot(
               label: "AM",
               value: "AM"
             },
-
             {
               label: "PM",
               value: "PM"
@@ -1884,11 +1831,8 @@ async function setupMeetHourHubSpot(
 
         {
           objectTypeId: "0-1",
-
           name: "timezone",
-
           label: "Timezone",
-
           fieldType:
             "single_line_text"
         }
@@ -1902,7 +1846,6 @@ async function setupMeetHourHubSpot(
         headers: {
           Authorization:
             `Bearer ${accessToken}`,
-
           "Content-Type":
             "application/json"
         }
@@ -1915,7 +1858,6 @@ async function setupMeetHourHubSpot(
 
     const formId =
       formRes.data.id;
-
     console.log(
       "FORM ID:",
       formId
@@ -1928,67 +1870,47 @@ async function setupMeetHourHubSpot(
     const workflowPayload = {
       name:
         "MeetHour Workflow",
-
       type: "CONTACT_FLOW",
-
       objectTypeId: "0-1",
-
       isEnabled: true,
-
       actions: [
         {
           actionId: "1",
-
           type: "WEBHOOK",
-
           method: "POST",
-
           webhookUrl:
             "https://meethourhubs.vercel.app/form-webhook",
-
           queryParams: []
         }
       ],
 
       enrollmentCriteria: {
         shouldReEnroll: false,
-
         type: "EVENT_BASED",
-
         eventFilterBranches: [
           {
             eventTypeId:
               "4-1639801",
-
             operator:
               "HAS_COMPLETED",
-
             filterBranchType:
               "UNIFIED_EVENTS",
-
             filterBranchOperator:
               "AND",
-
             filterBranches: [],
-
             filters: [
               {
                 property:
                   "hs_form_id",
-
                 filterType:
                   "PROPERTY",
-
                 operation: {
                   operator:
                     "IS_ANY_OF",
-
                   includeObjectsWithNoValueSet:
                     false,
-
                   operationType:
                     "ENUMERATION",
-
                   values: [formId]
                 }
               }
@@ -2009,7 +1931,6 @@ async function setupMeetHourHubSpot(
           headers: {
             Authorization:
               `Bearer ${accessToken}`,
-
             "Content-Type":
               "application/json"
           }
@@ -2030,23 +1951,18 @@ async function setupMeetHourHubSpot(
 
     return {
       success: true,
-
       formId,
-
       workflowId:
         workflowRes.data.id
     };
-
   } catch (err) {
     console.log(
       "SETUP ERROR:",
       err.response?.data ||
       err.message
     );
-
     return {
       success: false,
-
       error:
         err.response?.data ||
         err.message
