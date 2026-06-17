@@ -506,6 +506,7 @@ app.get('/callback', async (req, res) => {
         'https://api.hubapi.com/marketing/v3/forms',
         {
           name: 'MeetHour Meeting Scheduler',
+          formType: 'hubspot',
           archived: false,
           createdAt: new Date().toISOString(),
           configuration: {
@@ -675,8 +676,19 @@ app.get('/callback', async (req, res) => {
           customProperties: {},
           suppressionListIds: [],
           enrollmentCriteria: {
-            type: 'FORM_SUBMISSION',
-            formId: formId
+            shouldReEnroll: true,
+            type: 'EVENT_BASED',
+            eventFilterBranches: [
+              {
+                filterBranches: [],
+                filters: [],
+                eventTypeId: '4-1639801',
+                operator: 'HAS_COMPLETED',
+                filterBranchType: 'UNIFIED_EVENTS',
+                filterBranchOperator: 'AND'
+              }
+            ],
+            listMembershipFilterBranches: []
           },
           actions: [
             {
