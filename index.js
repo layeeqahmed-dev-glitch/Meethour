@@ -1647,11 +1647,41 @@ app.post("/form-webhook", async (req, res) => {
 
     if (contactId) {
       try {
-        await axios.post("https://api.hubapi.com/engagements/v1/engagements", { engagement: { active: true, type: "MEETING", timestamp: Date.now() }, associations: { contactIds: [Number(contactId)] }, metadata: { title: `${meeting_name} - MeetHour Meeting`, body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br> <b>Topic:</b> ${meeting_name}<br> <b>Date:</b> ${meeting_date}<br> <b>Time:</b> ${meeting_time} ${meeting_meridiem}<br> <b>Timezone:</b> ${timezone}<br><br> <b>Join MeetHour:</b> ${meeting.joinURL}<br><br> <b>Meeting ID:</b> ${meeting.meeting_id}<br> <b>Passcode:</b> ${meeting.passcode}` } }, { headers: { Authorization: `Bearer ${hubspotToken}`, "Content-Type": "application/json" } }); console.log("MEETING ENGAGEMENT CREATED!");
-
-        console.log(
-          "HUBSPOT ACTIVITY CREATED!"
+        await axios.post(
+          "https://api.hubapi.com/engagements/v1/engagements",
+          {
+            engagement: {
+              active: true,
+              type: "MEETING",
+              timestamp: Date.now(),
+            },
+            associations: {
+              contactIds: [Number(contactId)],
+            },
+            metadata: {
+              title: `${meeting_name} - MeetHour Meeting`,
+              body: `
+        <b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>
+        
+        <b>Topic:</b> ${meeting_name}<br>
+        <b>Date:</b> ${meeting_date}<br>
+        <b>Time:</b> ${meeting_time} ${meeting_meridiem}<br>
+        <b>Timezone:</b> ${timezone}<br><br>
+        <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
+        <b>Meeting ID:</b> ${meeting.meeting_id}<br>
+        <b>Passcode:</b> ${meeting.passcode}
+      `,
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${hubspotToken}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
+
+        console.log("MEETING ENGAGEMENT CREATED!");
 
       } catch (activityErr) {
         console.log(
