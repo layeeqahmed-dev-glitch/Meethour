@@ -1731,6 +1731,7 @@ async function setupMeetHourHubSpot(
     console.log(
       "===== STARTING HUBSPOT SETUP ====="
     );
+  
 
     // ======================================================
     // CREATE FORM
@@ -1941,7 +1942,11 @@ async function setupMeetHourHubSpot(
       workflowId:
         workflowRes.data.id
     };
-  } catch (err) {
+} catch (err) {
+    console.log(
+      "FULL ERROR:",
+      JSON.stringify(err.response?.data, null, 2)
+    );
     console.log(
       "SETUP ERROR:",
       err.response?.data ||
