@@ -2002,7 +2002,7 @@ async function setupMeetHourHubSpot(
       }
     };
 
-    const workflowRes =
+    const workflowResponse =
       await axios.post(
         "https://api.hubapi.com/automation/v4/flows",
         workflowPayload,
@@ -2025,7 +2025,7 @@ async function setupMeetHourHubSpot(
       )
     );
 
-    const workflowRes =
+    const workflowResponse =
       await axios.post(
         workflowUrl,
         workflowPayload,
