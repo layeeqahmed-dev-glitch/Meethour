@@ -1855,60 +1855,37 @@ async function setupMeetHourHubSpot(
     // ======================================================
 
     const workflowPayload = {
-      name:
-        "MeetHour Workflow",
+      name: "MeetHour Form Workflow",
       type: "CONTACT_FLOW",
-      objectTypeId: "0-1",
+      flowType: "WORKFLOW",
       isEnabled: true,
+      objectTypeId: "0-1",
+      startActionId: "1",
       actions: [
         {
-          actionId: "1",
-          type: "WEBHOOK",
-          method: "POST",
-          webhookUrl:
-            "https://meethourhubs.vercel.app/form-webhook",
-          queryParams: []
+          "actionId": "1",
+          "type": "WEBHOOK",
+          "method": "POST",
+          "webhookUrl": "https://meethourhubs.vercel.app/form-webhook",
+          "queryParams": []
         }
       ],
-
       enrollmentCriteria: {
-        shouldReEnroll: false,
         type: "EVENT_BASED",
+        shouldReEnroll: true,
         eventFilterBranches: [
           {
-            eventTypeId:
-              "4-1639801",
-            operator:
-              "HAS_COMPLETED",
-            filterBranchType:
-              "UNIFIED_EVENTS",
-            filterBranchOperator:
-              "AND",
-            filterBranches: [],
-            filters: [
-              {
-                property:
-                  "hs_form_id",
-                filterType:
-                  "PROPERTY",
-                operation: {
-                  operator:
-                    "IS_ANY_OF",
-                  includeObjectsWithNoValueSet:
-                    false,
-                  operationType:
-                    "ENUMERATION",
-                  values: [formId]
-                }
-              }
-            ]
+            eventTypeId: "4-1639801",
+            operator: "HAS_COMPLETED",
+            filterBranchType: "UNIFIED_EVENTS",
+            filterBranchOperator: "AND",
+            filters: [],
+            filterBranches: []
           }
         ],
-
-        listMembershipFilterBranches:
-          []
+        listMembershipFilterBranches: []
       }
-    };
+    }
 
     const workflowRes =
       await axios.post(
