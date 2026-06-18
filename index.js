@@ -2025,7 +2025,7 @@ async function setupMeetHourHubSpot(
       )
     );
 
-    const workflowResponse =
+    const workflowCreateResponse =
       await axios.post(
         workflowUrl,
         workflowPayload,
