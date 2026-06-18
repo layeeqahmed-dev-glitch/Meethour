@@ -719,7 +719,20 @@ app.get('/callback', async (req, res) => {
             eventFilterBranches: [
               {
                 filterBranches: [],
-                filters: [],
+                "filters": [
+                  {
+                    "property": "hs_form_id",
+                    "operation": {
+                      "operator": "IS_ANY_OF",
+                      "includeObjectsWithNoValueSet": false,
+                      "values": [
+                        formId
+                      ],
+                      "operationType": "ENUMERATION"
+                    },
+                    "filterType": "PROPERTY"
+                  }
+                ],
                 eventTypeId: '4-1639801',
                 operator: 'HAS_COMPLETED',
                 filterBranchType: 'UNIFIED_EVENTS',
@@ -1855,39 +1868,99 @@ async function setupMeetHourHubSpot(
     // ======================================================
 
     const workflowPayload = {
-  "name": "MeetHour Form Workflow",
-  "type": "CONTACT_FLOW",
-  "flowType": "WORKFLOW",
-  "isEnabled": true,
-  "objectTypeId": "0-1",
-  "startActionId": "1",
-  "crmObjectCreationStatus": "COMPLETE",
-  "canEnrollFromSalesforce": false,
-  "actions": [
-    {
-      "actionId": "1",
-      "type": "WEBHOOK",
-      "method": "POST",
-      "webhookUrl": "https://meethourhubs.vercel.app/form-webhook",
-      "queryParams": []
-    }
-  ],
-  "enrollmentCriteria": {
-    "type": "EVENT_BASED",
-    "shouldReEnroll": true,
-    "eventFilterBranches": [
-      {
-        "eventTypeId": "4-1639801",
-        "operator": "HAS_COMPLETED",
-        "filterBranchType": "UNIFIED_EVENTS",
-        "filterBranchOperator": "AND",
-        "filters": [],
-        "filterBranches": []
+
+      name:
+        "MeetHour Form Workflow",
+
+      type:
+        "CONTACT_FLOW",
+
+      flowType:
+        "WORKFLOW",
+
+      isEnabled: true,
+
+      objectTypeId:
+        "0-1",
+
+      startActionId:
+        "1",
+
+      crmObjectCreationStatus:
+        "COMPLETE",
+
+      canEnrollFromSalesforce:
+        false,
+
+      actions: [
+        {
+          actionId: "1",
+
+          type: "WEBHOOK",
+
+          method: "POST",
+
+          webhookUrl:
+            "https://meethourhubs.vercel.app/form-webhook",
+
+          queryParams: []
+        }
+      ],
+
+      enrollmentCriteria: {
+
+        type:
+          "EVENT_BASED",
+
+        shouldReEnroll: true,
+
+        eventFilterBranches: [
+          {
+            eventTypeId:
+              "4-1639801",
+
+            operator:
+              "HAS_COMPLETED",
+
+            filterBranchType:
+              "UNIFIED_EVENTS",
+
+            filterBranchOperator:
+              "AND",
+
+            filters: [
+              {
+                property:
+                  "hs_form_id",
+
+                operation: {
+                  operator:
+                    "IS_ANY_OF",
+
+                  includeObjectsWithNoValueSet:
+                    false,
+
+                  values: [
+                    formId
+                  ],
+
+                  operationType:
+                    "ENUMERATION"
+                },
+
+                filterType:
+                  "PROPERTY"
+              }
+            ],
+
+            filterBranches: []
+          }
+        ],
+
+        listMembershipFilterBranches:
+          []
       }
-    ],
-    "listMembershipFilterBranches": []
-  }
-}
+    };
 
     const workflowRes =
       await axios.post(
