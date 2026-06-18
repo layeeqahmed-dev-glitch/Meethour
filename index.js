@@ -1645,9 +1645,18 @@ app.post("/form-webhook", async (req, res) => {
       props.hs_object_id?.value ||
       body.vid;
 
+
+    const ownerId =
+      props.hubspot_owner_id?.value;
+
     console.log(
       "CONTACT ID:",
       contactId
+    );
+
+    console.log(
+      "OWNER ID:",
+      ownerId
     );
 
     if (contactId) {
