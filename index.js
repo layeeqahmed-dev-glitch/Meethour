@@ -1687,6 +1687,11 @@ app.post("/form-webhook", async (req, res) => {
             engagement: {
               active: true,
 
+              ownerId:
+                ownerId
+                  ? Number(ownerId)
+                  : undefined,
+
               type: "MEETING",
 
               timestamp: Date.now(),
@@ -1700,11 +1705,36 @@ app.post("/form-webhook", async (req, res) => {
 
             metadata: {
               title:
-                `${meeting_name}
-            - MeetHour Meeting`,
+                `${meeting_name} - MeetHour Meeting`,
 
-              body: details
-            },
+              body: details,
+
+              startTime:
+                new Date().toISOString(),
+
+              endTime:
+                new Date(
+                  Date.now() + 60 * 60 * 1000
+                ).toISOString(),
+
+              outcome:
+                "SCHEDULED",
+
+              source:
+                "INTEGRATION",
+
+              meetingOutcome:
+                "SCHEDULED",
+
+              externalUrl:
+                meeting.joinURL,
+
+              location:
+                meeting.joinURL,
+
+              locationType:
+                "VIDEO_CONFERENCE"
+            }
           },
           {
             headers: {
