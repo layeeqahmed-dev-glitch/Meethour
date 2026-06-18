@@ -1416,7 +1416,7 @@ app.post("/update-meeting", async (req, res) => {
 // FORM WEBHOOK ROUTE
 // ======================================================
 
-router.post("/form-webhook", async (req, res) => {
+app.post("/form-webhook", async (req, res) => {
 
   try {
 
