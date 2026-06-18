@@ -1642,48 +1642,87 @@ app.post("/form-webhook", async (req, res) => {
       );
 
     const contactId =
-      props.hs_object_id?.value || body.vid;
-    console.log("CONTACT ID:", contactId);
+      props.hs_object_id?.value ||
+      body.vid;
+
+    console.log(
+      "CONTACT ID:",
+      contactId
+    );
 
     if (contactId) {
+
       try {
+
+        const details = `
+      <b>${firstname} ${lastname}
+      is inviting you to a scheduled meeting.</b><br><br>
+
+      <b>Topic:</b>
+      ${meeting.topic}<br>
+
+      <b>Date:</b>
+      ${meeting_date}<br>
+
+      <b>Time:</b>
+      ${meeting_time}
+      ${meeting_meridiem}<br>
+
+      <b>Timezone:</b>
+      ${timezone}<br><br>
+
+      <b>Join MeetHour Meeting:</b>
+      ${meeting.joinURL}<br><br>
+
+      <b>Meeting ID:</b>
+      ${meeting.meeting_id}<br>
+
+      <b>Passcode:</b>
+      ${meeting.passcode}
+    `;
+
         await axios.post(
           "https://api.hubapi.com/engagements/v1/engagements",
           {
             engagement: {
               active: true,
+
               type: "MEETING",
+
               timestamp: Date.now(),
             },
+
             associations: {
-              contactIds: [Number(contactId)],
+              contactIds: [
+                Number(contactId)
+              ],
             },
+
             metadata: {
-              title: `${meeting_name} - MeetHour Meeting`,
-              body: `
-        <b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>
-        
-        <b>Topic:</b> ${meeting_name}<br>
-        <b>Date:</b> ${meeting_date}<br>
-        <b>Time:</b> ${meeting_time} ${meeting_meridiem}<br>
-        <b>Timezone:</b> ${timezone}<br><br>
-        <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
-        <b>Meeting ID:</b> ${meeting.meeting_id}<br>
-        <b>Passcode:</b> ${meeting.passcode}
-      `,
+              title:
+                `${meeting_name}
+            - MeetHour Meeting`,
+
+              body: details
             },
           },
           {
             headers: {
-              Authorization: `Bearer ${hubspotToken}`,
-              "Content-Type": "application/json",
+              Authorization:
+                `Bearer ${hubspotToken}`,
+
+              "Content-Type":
+                "application/json",
             },
           }
         );
 
-        console.log("MEETING ENGAGEMENT CREATED!");
+        console.log(
+          "MEETING ENGAGEMENT CREATED!"
+        );
 
       } catch (activityErr) {
+
         console.log(
           "ACTIVITY ERROR:",
           activityErr.response?.data ||
@@ -1695,13 +1734,15 @@ app.post("/form-webhook", async (req, res) => {
     return res.json({
       success: true,
 
-      joinURL: meeting.joinURL,
+      joinURL:
+        meeting.joinURL,
 
       meetingId:
         meeting.meeting_id
     });
 
   } catch (err) {
+
     console.log(
       "FORM WEBHOOK ERROR:",
       err.response?.data ||
@@ -1715,6 +1756,7 @@ app.post("/form-webhook", async (req, res) => {
         err.response?.data ||
         err.message
     });
+
   }
 });
 
