@@ -1745,249 +1745,332 @@ async function setupMeetHourHubSpot(
     console.log(
       "===== STARTING HUBSPOT SETUP ====="
     );
+// ======================================================
+// CREATE FORM
+// ======================================================
 
-    // ======================================================
-    // CREATE FORM
-    // ======================================================
+console.log("==================================");
+console.log("CREATING HUBSPOT FORM");
+console.log("==================================");
 
-    const formPayload = {
-      name:
-        "MeetHour Meeting Scheduler",
-      configuration: {
-        submitText:
-          "Schedule Meeting"
-      },
-      displayOptions: {
-        theme: "default"
-      },
-
-      fields: [
+const formPayload = {
+  name: "MeetHour Meeting Scheduler",
+  configuration: {
+    createMarketableContact: true
+  },
+  displayOptions: {
+    theme: "default"
+  },
+  fields: [
+    {
+      name: "firstname",
+      label: "First Name",
+      fieldType: "text"
+    },
+    {
+      name: "lastname",
+      label: "Last Name",
+      fieldType: "text"
+    },
+    {
+      name: "email",
+      label: "Email",
+      fieldType: "text"
+    },
+    {
+      name: "meeting_name",
+      label: "Meeting Name",
+      fieldType: "text"
+    },
+    {
+      name: "meeting_date",
+      label: "Meeting Date",
+      fieldType: "date"
+    },
+    {
+      name: "meeting_time",
+      label: "Meeting Time",
+      fieldType: "text"
+    },
+    {
+      name: "meeting_meridiem",
+      label: "AM/PM",
+      fieldType: "select",
+      options: [
         {
-          objectTypeId: "0-1",
-          name: "firstname",
-          label: "First Name",
-          fieldType:
-            "single_line_text"
-        },
-
-        {
-          objectTypeId: "0-1",
-          name: "lastname",
-          label: "Last Name",
-          fieldType:
-            "single_line_text"
-        },
-
-        {
-          objectTypeId: "0-1",
-          name: "email",
-          label: "Email",
-          fieldType: "email"
-        },
-
-        {
-          objectTypeId: "0-1",
-          name: "meeting_name",
-          label: "Meeting Name",
-          fieldType:
-            "single_line_text"
-        },
-
-        {
-          objectTypeId: "0-1",
-          name: "meeting_date",
-          label: "Meeting Date",
-          fieldType:
-            "datepicker"
-        },
-
-        {
-          objectTypeId: "0-1",
-          name: "meeting_time",
-          label: "Meeting Time",
-          fieldType:
-            "single_line_text"
+          label: "AM",
+          value: "AM"
         },
         {
-          objectTypeId: "0-1",
-
-          name:
-            "meeting_meridiem",
-          label:
-            "Meeting Meridiem",
-          fieldType: "dropdown",
-
-          options: [
-            {
-              label: "AM",
-              value: "AM"
-            },
-            {
-              label: "PM",
-              value: "PM"
-            }
-          ]
-        },
-
-        {
-          objectTypeId: "0-1",
-          name: "timezone",
-          label: "Timezone",
-          fieldType:
-            "single_line_text"
+          label: "PM",
+          value: "PM"
         }
       ]
-    };
+    },
+    {
+      name: "timezone",
+      label: "Timezone",
+      fieldType: "text"
+    }
+  ]
+};
 
-    const formRes = await axios.post(
-      "https://api.hubapi.com/marketing/v3/forms",
-      formPayload,
+console.log(
+  "FORM PAYLOAD:"
+);
+
+console.log(
+  JSON.stringify(
+    formPayload,
+    null,
+    2
+  )
+);
+
+const formResponse =
+  await axios.post(
+
+    "https://api.hubapi.com/marketing/v3/forms",
+
+    formPayload,
+
+    {
+      headers: {
+        Authorization:
+          `Bearer ${accessToken}`,
+
+        "Content-Type":
+          "application/json"
+      }
+    }
+  );
+
+console.log("==================================");
+console.log("FORM CREATED SUCCESSFULLY");
+console.log("==================================");
+
+console.log(
+  JSON.stringify(
+    formResponse.data,
+    null,
+    2
+  )
+);
+
+const formId =
+  formResponse.data.id;
+
+console.log(
+  "FORM ID:",
+  formId
+);
+
+// ======================================================
+// WAIT FEW SECONDS
+// ======================================================
+
+console.log(
+  "WAITING FOR HUBSPOT FORM INDEXING..."
+);
+
+await new Promise(
+  resolve =>
+    setTimeout(
+      resolve,
+      5000
+    )
+);
+
+console.log(
+  "WAIT COMPLETE"
+);
+
+// ======================================================
+// CREATE WORKFLOW
+// ======================================================
+
+console.log("==================================");
+console.log("CREATING WORKFLOW");
+console.log("==================================");
+
+const workflowPayload = {
+
+  name:
+    "MeetHour Form Workflow",
+
+  type:
+    "CONTACT_FLOW",
+
+  flowType:
+    "WORKFLOW",
+
+  isEnabled:
+    true,
+
+  objectTypeId:
+    "0-1",
+
+  startActionId:
+    "1",
+
+  crmObjectCreationStatus:
+    "COMPLETE",
+
+  canEnrollFromSalesforce:
+    false,
+
+  actions: [
+    {
+      actionId:
+        "1",
+
+      type:
+        "WEBHOOK",
+
+      method:
+        "POST",
+
+      webhookUrl:
+        "https://meethourhubs.vercel.app/form-webhook",
+
+      queryParams: []
+    }
+  ],
+
+  enrollmentCriteria: {
+
+    type:
+      "EVENT_BASED",
+
+    shouldReEnroll:
+      true,
+
+    eventFilterBranches: [
+      {
+        eventTypeId:
+          "4-1639801",
+
+        operator:
+          "HAS_COMPLETED",
+
+        filterBranchType:
+          "UNIFIED_EVENTS",
+
+        filterBranchOperator:
+          "AND",
+
+        filters: [
+          {
+            property:
+              "hs_form_id",
+
+            operation: {
+
+              operator:
+                "IS_ANY_OF",
+
+              includeObjectsWithNoValueSet:
+                false,
+
+              values: [
+                formId
+              ],
+
+              operationType:
+                "ENUMERATION"
+            },
+
+            filterType:
+              "PROPERTY"
+          }
+        ],
+
+        filterBranches: []
+      }
+    ],
+
+    listMembershipFilterBranches:
+      []
+  }
+};
+
+console.log(
+  "WORKFLOW PAYLOAD:"
+);
+
+console.log(
+  JSON.stringify(
+    workflowPayload,
+    null,
+    2
+  )
+);
+
+try {
+
+  const workflowCreateResponse =
+    await axios.post(
+
+      "https://api.hubapi.com/automation/v4/flows",
+
+      workflowPayload,
+
       {
         headers: {
           Authorization:
             `Bearer ${accessToken}`,
+
           "Content-Type":
             "application/json"
         }
       }
     );
 
-    console.log(
-      "FORM CREATED!"
-    );
+  console.log("==================================");
+  console.log("WORKFLOW CREATED SUCCESSFULLY");
+  console.log("==================================");
 
-    const formId =
-      formRes.data.id;
-    console.log(
-      "FORM ID:",
-      formId
-    );
+  console.log(
+    JSON.stringify(
+      workflowCreateResponse.data,
+      null,
+      2
+    )
+  );
 
-    // ======================================================
-    // CREATE WORKFLOW
-    // ======================================================
+} catch (workflowErr) {
 
-    const workflowPayload = {
+  console.log("==================================");
+  console.log("WORKFLOW CREATION FAILED");
+  console.log("==================================");
 
-      name:
-        "MeetHour Form Workflow",
+  console.log(
+    "ERROR STATUS:",
+    workflowErr.response?.status
+  );
 
-      type:
-        "CONTACT_FLOW",
+  console.log(
+    "ERROR DATA:"
+  );
 
-      flowType:
-        "WORKFLOW",
+  console.log(
+    JSON.stringify(
+      workflowErr.response?.data,
+      null,
+      2
+    )
+  );
 
-      isEnabled: true,
+  console.log(
+    "FORM ID USED:",
+    formId
+  );
 
-      objectTypeId:
-        "0-1",
-
-      startActionId:
-        "1",
-
-      crmObjectCreationStatus:
-        "COMPLETE",
-
-      canEnrollFromSalesforce:
-        false,
-
-      actions: [
-        {
-          actionId: "1",
-
-          type: "WEBHOOK",
-
-          method: "POST",
-
-          webhookUrl:
-            "https://meethourhubs.vercel.app/form-webhook",
-
-          queryParams: []
-        }
-      ],
-
-      enrollmentCriteria: {
-
-        type:
-          "EVENT_BASED",
-
-        shouldReEnroll: true,
-
-        eventFilterBranches: [
-          {
-            eventTypeId:
-              "4-1639801",
-
-            operator:
-              "HAS_COMPLETED",
-
-            filterBranchType:
-              "UNIFIED_EVENTS",
-
-            filterBranchOperator:
-              "AND",
-
-            filters: [
-              {
-                property:
-                  "hs_form_id",
-
-                operation: {
-                  operator:
-                    "IS_ANY_OF",
-
-                  includeObjectsWithNoValueSet:
-                    false,
-
-                  values: [
-                    formId
-                  ],
-
-                  operationType:
-                    "ENUMERATION"
-                },
-
-                filterType:
-                  "PROPERTY"
-              }
-            ],
-
-            filterBranches: []
-          }
-        ],
-
-        listMembershipFilterBranches:
-          []
-      }
-    };
-
-    const workflowRes =
-      await axios.post(
-        "https://api.hubapi.com/automation/v4/flows",
-        workflowPayload,
-        {
-          headers: {
-            Authorization:
-              `Bearer ${accessToken}`,
-            "Content-Type":
-              "application/json"
-          }
-        }
-      );
-
-    console.log(
-      "WORKFLOW CREATED!"
-    );
-
-    console.log(
-      JSON.stringify(
-        workflowRes.data,
-        null,
-        2
-      )
-    );
-
+  console.log(
+    "ACCESS TOKEN EXISTS:",
+    !!accessToken
+  );
+}
     return {
       success: true,
       formId,
