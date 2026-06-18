@@ -743,6 +743,7 @@ app.get('/callback', async (req, res) => {
       console.log('Workflow created:', workflowRes.data.id);
 
     } catch (err) {
+      console.log('FULL WORKFLOW ERROR:', JSON.stringify(err.response?.data, null, 2));
       console.log('Workflow creation error:', err.response?.data || err.message);
     }
 
@@ -1731,7 +1732,6 @@ async function setupMeetHourHubSpot(
     console.log(
       "===== STARTING HUBSPOT SETUP ====="
     );
-  
 
     // ======================================================
     // CREATE FORM
@@ -1942,11 +1942,7 @@ async function setupMeetHourHubSpot(
       workflowId:
         workflowRes.data.id
     };
-} catch (err) {
-    console.log(
-      "FULL ERROR:",
-      JSON.stringify(err.response?.data, null, 2)
-    );
+  } catch (err) {
     console.log(
       "SETUP ERROR:",
       err.response?.data ||
