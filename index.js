@@ -1420,6 +1420,7 @@ app.post("/update-meeting", async (req, res) => {
 
 app.post("/form-webhook", async (req, res) => {
   try {
+
     console.log("===== FORM WEBHOOK =====");
 
     console.log(
@@ -1430,19 +1431,38 @@ app.post("/form-webhook", async (req, res) => {
     await connectDB();
 
     // ======================================================
-    // HUBSPOT DEFAULT WEBHOOK STRUCTURE
+    // HUBSPOT WEBHOOK DATA
     // ======================================================
 
     const body = req.body || {};
     const props = body.properties || {};
-    const email = props.email?.value || "";
-    const firstname = props.firstname?.value || "";
-    const lastname = props.lastname?.value || "";
-    const meeting_name = props.meeting_name?.value || "MeetHour Meeting";
-    const rawDate = props.meeting_date?.value;
-    const rawTime = props.meeting_time?.value;
-    const timezone = props.timezone?.value || "UTC";
-    let meeting_meridiem = props.meeting_meridiem?.value || "AM";
+
+    const email =
+      props.email?.value || "";
+
+    const firstname =
+      props.firstname?.value || "";
+
+    const lastname =
+      props.lastname?.value || "";
+
+    const meeting_name =
+      props.meeting_name?.value ||
+      "MeetHour Meeting";
+
+    const rawDate =
+      props.meeting_date?.value;
+
+    const rawTime =
+      props.meeting_time?.value;
+
+    const timezone =
+      props.timezone?.value ||
+      "UTC";
+
+    let meeting_meridiem =
+      props.meeting_meridiem?.value ||
+      "AM";
 
     console.log("EMAIL:", email);
     console.log("DATE:", rawDate);
@@ -1450,14 +1470,14 @@ app.post("/form-webhook", async (req, res) => {
 
     // ======================================================
     // DATE FORMAT
-    // OUTPUT:
-    // 2026-06-17
     // ======================================================
 
     let meeting_date = rawDate;
 
     try {
-      const dateObj = new Date(parseInt(rawDate));
+
+      const dateObj =
+        new Date(parseInt(rawDate));
 
       const yyyy =
         dateObj.getUTCFullYear();
@@ -1470,16 +1490,18 @@ app.post("/form-webhook", async (req, res) => {
         dateObj.getUTCDate()
       ).padStart(2, "0");
 
-      meeting_date = `${yyyy}-${mm}-${dd}`;
+      meeting_date =
+        `${yyyy}-${mm}-${dd}`;
 
     } catch (e) {
-      console.log("DATE FORMAT ERROR");
+
+      console.log(
+        "DATE FORMAT ERROR"
+      );
     }
 
     // ======================================================
     // TIME FORMAT
-    // OUTPUT:
-    // 04:00
     // ======================================================
 
     let meeting_time = rawTime;
@@ -1488,15 +1510,17 @@ app.post("/form-webhook", async (req, res) => {
       rawTime &&
       rawTime.includes(":")
     ) {
-      const [strHours, strMinutes] =
-        rawTime.split(":");
 
-      let hours = parseInt(
+      const [
         strHours,
-        10
-      );
+        strMinutes
+      ] = rawTime.split(":");
+
+      let hours =
+        parseInt(strHours, 10);
 
       if (hours >= 12) {
+
         meeting_meridiem = "PM";
 
         if (hours > 12) {
@@ -1504,14 +1528,13 @@ app.post("/form-webhook", async (req, res) => {
         }
 
       } else if (hours === 0) {
-        hours = 12;
 
+        hours = 12;
         meeting_meridiem = "AM";
       }
 
-      meeting_time = `${String(
-        hours
-      ).padStart(2, "0")}:${strMinutes}`;
+      meeting_time =
+        `${String(hours).padStart(2, "0")}:${strMinutes}`;
     }
 
     console.log(
@@ -1530,23 +1553,29 @@ app.post("/form-webhook", async (req, res) => {
     );
 
     // ======================================================
-    // FIND CUSTOMER TOKEN
+    // PORTAL + TOKEN
     // ======================================================
 
     const portalId =
       body["portal-id"] ||
       body.portalId;
-    console.log("PORTAL ID:", portalId);
+
+    console.log(
+      "PORTAL ID:",
+      portalId
+    );
 
     const tokenRecord =
       await Token.findOne({
-        hubspotPortalId: portalId
+        hubspotPortalId:
+          portalId
       });
 
     if (
       !tokenRecord ||
       !tokenRecord.meethourAccessToken
     ) {
+
       return res.status(400).json({
         success: false,
         message:
@@ -1561,13 +1590,17 @@ app.post("/form-webhook", async (req, res) => {
       tokenRecord.meethourUserId;
 
     // ======================================================
-    // CREATE ATTENDEE
+    // ATTENDEES
     // ======================================================
 
     const attend = [
       {
-        first_name: firstname,
-        last_name: lastname,
+        first_name:
+          firstname,
+
+        last_name:
+          lastname,
+
         email
       }
     ];
@@ -1577,6 +1610,7 @@ app.post("/form-webhook", async (req, res) => {
     // ======================================================
 
     const payload = {
+
       meeting_name,
 
       meeting_date,
@@ -1587,7 +1621,8 @@ app.post("/form-webhook", async (req, res) => {
 
       timezone,
 
-      passcode: generatePasscode(),
+      passcode:
+        generatePasscode(),
 
       attend,
 
@@ -1597,9 +1632,10 @@ app.post("/form-webhook", async (req, res) => {
 
       duration_min: 0,
 
-      hostusers: meethourUserId
-        ? [Number(meethourUserId)]
-        : []
+      hostusers:
+        meethourUserId
+          ? [Number(meethourUserId)]
+          : []
     };
 
     console.log(
@@ -1608,22 +1644,23 @@ app.post("/form-webhook", async (req, res) => {
     );
 
     // ======================================================
-    // CREATE MEETING
+    // CREATE MEETHOUR MEETING
     // ======================================================
 
-    const meetingRes = await axios.post(
-      "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
-      payload,
-      {
-        headers: {
-          Authorization:
-            `Bearer ${meethourToken}`,
+    const meetingRes =
+      await axios.post(
+        "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
+        payload,
+        {
+          headers: {
+            Authorization:
+              `Bearer ${meethourToken}`,
 
-          "Content-Type":
-            "application/json"
+            "Content-Type":
+              "application/json"
+          }
         }
-      }
-    );
+      );
 
     console.log(
       "MEETING CREATED!"
@@ -1632,8 +1669,42 @@ app.post("/form-webhook", async (req, res) => {
     const meeting =
       meetingRes.data.data;
 
+    console.log(
+      "JOIN URL:",
+      meeting.joinURL
+    );
+
     // ======================================================
-    // CREATE HUBSPOT MEETING ACTIVITY
+    // SAVE TO DB
+    // ======================================================
+
+    await Meeting.create({
+
+      hubspotMeetingId:
+        `${portalId}-${Date.now()}`,
+
+      hubspotPortalId:
+        String(portalId),
+
+      meethourMeetingId:
+        meeting.meeting_id,
+
+      meethourMeetingUrl:
+        meeting.joinURL,
+
+      meetingName:
+        meeting_name,
+
+      conferenceId:
+        String(meeting.id)
+    });
+
+    console.log(
+      "MEETING SAVED!"
+    );
+
+    // ======================================================
+    // HUBSPOT TOKEN
     // ======================================================
 
     const hubspotToken =
@@ -1641,10 +1712,13 @@ app.post("/form-webhook", async (req, res) => {
         portalId
       );
 
+    // ======================================================
+    // CONTACT + OWNER
+    // ======================================================
+
     const contactId =
       props.hs_object_id?.value ||
       body.vid;
-
 
     const ownerId =
       props.hubspot_owner_id?.value;
@@ -1659,41 +1733,69 @@ app.post("/form-webhook", async (req, res) => {
       ownerId
     );
 
-    if (contactId) {
+    // ======================================================
+    // OWNER NAME
+    // ======================================================
+
+    let ownerName = "Host";
+
+    if (ownerId) {
 
       try {
 
-        const details = `
-      <b>${firstname} ${lastname}
-      is inviting you to a scheduled meeting.</b><br><br>
+        const ownerRes =
+          await axios.get(
+            `https://api.hubapi.com/crm/v3/owners/${ownerId}`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${hubspotToken}`
+              }
+            }
+          );
 
-      <b>Topic:</b>
-      ${meeting.topic}<br>
+        const owner =
+          ownerRes.data;
 
-      <b>Date:</b>
-      ${meeting_date}<br>
+        ownerName =
+          `${owner.firstName || ""}
+          ${owner.lastName || ""}`.trim();
 
-      <b>Time:</b>
-      ${meeting_time}
-      ${meeting_meridiem}<br>
+      } catch (ownerErr) {
 
-      <b>Timezone:</b>
-      ${timezone}<br><br>
+        console.log(
+          "OWNER FETCH ERROR:",
+          ownerErr.response?.data ||
+          ownerErr.message
+        );
+      }
+    }
 
-      <b>Join MeetHour Meeting:</b>
-      ${meeting.joinURL}<br><br>
+    // ======================================================
+    // MEETING DETAILS
+    // ======================================================
 
-      <b>Meeting ID:</b>
-      ${meeting.meeting_id}<br>
+    const formattedTime =
+      `${meeting_time} ${meeting_meridiem} (${timezone})`;
 
-      <b>Passcode:</b>
-      ${meeting.passcode}
-    `;
+    const startTimestamp =
+      new Date(
+        `${meeting_date} ${meeting_time} ${meeting_meridiem}`
+      ).getTime();
+
+    // ======================================================
+    // CREATE HUBSPOT MEETING ACTIVITY
+    // ======================================================
+
+    if (contactId) {
+
+      try {
 
         await axios.post(
           "https://api.hubapi.com/engagements/v1/engagements",
           {
             engagement: {
+
               active: true,
 
               ownerId:
@@ -1703,46 +1805,40 @@ app.post("/form-webhook", async (req, res) => {
 
               type: "MEETING",
 
-              timestamp: Date.now(),
+              timestamp:
+                startTimestamp ||
+                Date.now()
             },
 
             associations: {
               contactIds: [
                 Number(contactId)
-              ],
+              ]
             },
 
             metadata: {
+
               title:
                 `${meeting_name} - MeetHour Meeting`,
 
-              body: details,
+              body: `
+                <b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
 
-              startTime:
-                new Date().toISOString(),
+                <b>Topic:</b>
+                ${meeting.topic}<br>
 
-              endTime:
-                new Date(
-                  Date.now() + 60 * 60 * 1000
-                ).toISOString(),
+                <b>Time:</b>
+                ${formattedTime}<br><br>
 
-              outcome:
-                "SCHEDULED",
+                <b>Join MeetHour:</b>
+                ${meeting.joinURL}<br><br>
 
-              source:
-                "INTEGRATION",
+                <b>Meeting ID:</b>
+                ${meeting.meeting_id}<br>
 
-              meetingOutcome:
-                "SCHEDULED",
-
-              externalUrl:
-                meeting.joinURL,
-
-              location:
-                meeting.joinURL,
-
-              locationType:
-                "VIDEO_CONFERENCE"
+                <b>Passcode:</b>
+                ${meeting.passcode}
+              `
             }
           },
           {
@@ -1751,8 +1847,8 @@ app.post("/form-webhook", async (req, res) => {
                 `Bearer ${hubspotToken}`,
 
               "Content-Type":
-                "application/json",
-            },
+                "application/json"
+            }
           }
         );
 
@@ -1770,7 +1866,12 @@ app.post("/form-webhook", async (req, res) => {
       }
     }
 
+    // ======================================================
+    // RESPONSE
+    // ======================================================
+
     return res.json({
+
       success: true,
 
       joinURL:
@@ -1789,13 +1890,13 @@ app.post("/form-webhook", async (req, res) => {
     );
 
     return res.status(500).json({
+
       success: false,
 
       error:
         err.response?.data ||
         err.message
     });
-
   }
 });
 
