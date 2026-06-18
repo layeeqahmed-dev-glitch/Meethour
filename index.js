@@ -1412,8 +1412,6 @@ app.post("/update-meeting", async (req, res) => {
   }
 });
 
-
-//form meeting
 // ======================================================
 // FORM WEBHOOK ROUTE
 // ======================================================
@@ -1707,197 +1705,171 @@ app.post("/form-webhook", async (req, res) => {
     // HUBSPOT TOKEN
     // ======================================================
 
-    const hubspotToken =
-      await refreshHubspotToken(
-        portalId
-      );
-
     // ======================================================
-    // CONTACT + OWNER
-    // ======================================================
+// CREATE HUBSPOT NATIVE MEETING
+// ======================================================
 
-    const contactId =
-      props.hs_object_id?.value ||
-      body.vid;
+const hubspotToken =
+  await refreshHubspotToken(
+    portalId
+  );
 
-    const ownerId =
-      props.hubspot_owner_id?.value;
+const contactId =
+  props.hs_object_id?.value ||
+  body.vid;
 
-    console.log(
-      "CONTACT ID:",
-      contactId
-    );
+console.log(
+  "CONTACT ID:",
+  contactId
+);
 
-    console.log(
-      "OWNER ID:",
-      ownerId
-    );
+// ======================================================
+// MEETING DETAILS HTML
+// ======================================================
 
-    // ======================================================
-    // OWNER NAME
-    // ======================================================
+const details = `
+<b>${firstname} ${lastname}</b> is inviting you to a scheduled meeting.<br><br>
 
-    let ownerName = "Host";
+<b>Topic:</b> ${meeting_name}<br>
+<b>Time:</b> ${meeting_time} ${meeting_meridiem} (${timezone})<br><br>
 
-    if (ownerId) {
+<b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
 
-      try {
+<b>Meeting ID:</b> ${meeting.meeting_id}<br>
+<b>Passcode:</b> ${meeting.passcode}
+`;
 
-        const ownerRes =
-          await axios.get(
-            `https://api.hubapi.com/crm/v3/owners/${ownerId}`,
-            {
-              headers: {
-                Authorization:
-                  `Bearer ${hubspotToken}`
+// ======================================================
+// START + END TIME
+// ======================================================
+
+const startTimestamp =
+  new Date(
+    `${meeting_date} ${meeting_time} ${meeting_meridiem}`
+  ).getTime();
+
+const endTimestamp =
+  startTimestamp +
+  (60 * 60 * 1000);
+
+// ======================================================
+// CREATE REAL HUBSPOT MEETING
+// ======================================================
+
+if (contactId) {
+
+  try {
+
+    await axios.post(
+
+      "https://api.hubapi.com/crm/v3/objects/meetings",
+
+      {
+
+        properties: {
+
+          hs_timestamp:
+            startTimestamp,
+
+          hs_meeting_title:
+            `${meeting_name} - MeetHour Meeting`,
+
+          hs_meeting_body:
+            details,
+
+          hs_meeting_start_time:
+            startTimestamp,
+
+          hs_meeting_end_time:
+            endTimestamp,
+
+          hs_meeting_outcome:
+            "SCHEDULED",
+
+          hs_meeting_location:
+            meeting.joinURL,
+
+          hs_meeting_external_url:
+            meeting.joinURL
+        },
+
+        associations: [
+          {
+            to: {
+              id: String(contactId)
+            },
+
+            types: [
+              {
+                associationCategory:
+                  "HUBSPOT_DEFINED",
+
+                associationTypeId:
+                  200
               }
-            }
-          );
-
-        const owner =
-          ownerRes.data;
-
-        ownerName =
-          `${owner.firstName || ""}
-          ${owner.lastName || ""}`.trim();
-
-      } catch (ownerErr) {
-
-        console.log(
-          "OWNER FETCH ERROR:",
-          ownerErr.response?.data ||
-          ownerErr.message
-        );
-      }
-    }
-
-    // ======================================================
-    // MEETING DETAILS
-    // ======================================================
-
-    const formattedTime =
-      `${meeting_time} ${meeting_meridiem} (${timezone})`;
-
-    const startTimestamp =
-      new Date(
-        `${meeting_date} ${meeting_time} ${meeting_meridiem}`
-      ).getTime();
-
-    // ======================================================
-    // CREATE HUBSPOT MEETING ACTIVITY
-    // ======================================================
-
-    if (contactId) {
-
-      try {
-
-        await axios.post(
-          "https://api.hubapi.com/engagements/v1/engagements",
-          {
-            engagement: {
-
-              active: true,
-
-              ownerId:
-                ownerId
-                  ? Number(ownerId)
-                  : undefined,
-
-              type: "MEETING",
-
-              timestamp:
-                startTimestamp ||
-                Date.now()
-            },
-
-            associations: {
-              contactIds: [
-                Number(contactId)
-              ]
-            },
-
-            metadata: {
-
-              title:
-                `${meeting_name} - MeetHour Meeting`,
-
-              body: `
-                <b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
-
-                <b>Topic:</b>
-                ${meeting.topic}<br>
-
-                <b>Time:</b>
-                ${formattedTime}<br><br>
-
-                <b>Join MeetHour:</b>
-                ${meeting.joinURL}<br><br>
-
-                <b>Meeting ID:</b>
-                ${meeting.meeting_id}<br>
-
-                <b>Passcode:</b>
-                ${meeting.passcode}
-              `
-            }
-          },
-          {
-            headers: {
-              Authorization:
-                `Bearer ${hubspotToken}`,
-
-              "Content-Type":
-                "application/json"
-            }
+            ]
           }
-        );
+        ]
+      },
 
-        console.log(
-          "MEETING ENGAGEMENT CREATED!"
-        );
+      {
+        headers: {
 
-      } catch (activityErr) {
+          Authorization:
+            `Bearer ${hubspotToken}`,
 
-        console.log(
-          "ACTIVITY ERROR:",
-          activityErr.response?.data ||
-          activityErr.message
-        );
+          "Content-Type":
+            "application/json"
+        }
       }
-    }
-
-    // ======================================================
-    // RESPONSE
-    // ======================================================
-
-    return res.json({
-
-      success: true,
-
-      joinURL:
-        meeting.joinURL,
-
-      meetingId:
-        meeting.meeting_id
-    });
-
-  } catch (err) {
-
-    console.log(
-      "FORM WEBHOOK ERROR:",
-      err.response?.data ||
-      err.message
     );
 
-    return res.status(500).json({
+    console.log(
+      "NATIVE HUBSPOT MEETING CREATED!"
+    );
 
-      success: false,
+  } catch (activityErr) {
 
-      error:
-        err.response?.data ||
-        err.message
-    });
+    console.log(
+      "MEETING ERROR:",
+      activityErr.response?.data ||
+      activityErr.message
+    );
   }
+}
+
+// ======================================================
+// FINAL RESPONSE
+// ======================================================
+
+return res.json({
+
+  success: true,
+
+  joinURL:
+    meeting.joinURL,
+
+  meetingId:
+    meeting.meeting_id
+});
+
+} catch (err) {
+
+console.log(
+  "FORM WEBHOOK ERROR:",
+  err.response?.data ||
+  err.message
+);
+
+return res.status(500).json({
+
+  success: false,
+
+  error:
+    err.response?.data ||
+    err.message
+});
+}
 });
 
 
