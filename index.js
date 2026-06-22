@@ -784,58 +784,97 @@ app.get('/callback', async (req, res) => {
         setTimeout(resolve, 5000)
       );
 
-      const workflowRes = await axios.post(
-        'https://api.hubapi.com/automation/v4/flows',
+     const workflowRes = await axios.post(
+
+  'https://api.hubapi.com/automation/v4/flows',
+
+  {
+    name: 'MeetHour Meeting Scheduler Workflow',
+
+    isEnabled: true,
+
+    flowType: 'WORKFLOW',
+
+    type: 'CONTACT_FLOW',
+
+    objectTypeId: '0-1',
+
+    startActionId: '1',
+
+    timeWindows: [],
+
+    blockedDates: [],
+
+    customProperties: {},
+
+    suppressionListIds: [],
+
+    enrollmentCriteria: {
+      shouldReEnroll: true,
+
+      type: 'EVENT_BASED',
+
+      eventFilterBranches: [
         {
-          name: 'MeetHour Meeting Scheduler Workflow',
-          isEnabled: true,
-          flowType: 'WORKFLOW',
-          type: 'CONTACT_FLOW',
-          objectTypeId: '0-1',
-          startActionId: '1',
-          timeWindows: [],
-          blockedDates: [],
-          customProperties: {},
-          suppressionListIds: [],
-          enrollmentCriteria: {
-            shouldReEnroll: true,
-            type: 'EVENT_BASED',
-            eventFilterBranches: [
-              {
-                filterBranches: [],
-                "filters": [
-                  {
-                    "property": "hs_form_id",
-                    "operation": {
-                      "operator": "IS_ANY_OF",
-                      "includeObjectsWithNoValueSet": false,
-                      "values": [
-                        formId
-                      ],
-                      "operationType": "ENUMERATION"
-                    },
-                    "filterType": "PROPERTY"
-                  }
-                ],
-                eventTypeId: '4-1639801',
-                operator: 'HAS_COMPLETED',
-                filterBranchType: 'UNIFIED_EVENTS',
-                filterBranchOperator: 'AND'
-              }
-            ],
-            listMembershipFilterBranches: []
-          },
-          actions: [
+          filterBranches: [],
+
+          filters: [
             {
-              type: 'WEBHOOK',
-              actionId: '1',
-              webhookUrl: 'https://meethourhubs.vercel.app/form-webhook',
-              method: 'POST',
-              queryParams: []
+              property: 'hs_form_id',
+
+              operation: {
+                operator: 'IS_ANY_OF',
+
+                includeObjectsWithNoValueSet: false,
+
+                values: [formId],
+
+                operationType: 'ENUMERATION'
+              },
+
+              filterType: 'PROPERTY'
             }
-        ],
-        { headers: { Authorization: `Bearer ${hubspotAccessToken}`, 'Content-Type': 'application/json' } }
-      );
+          ],
+
+          eventTypeId: '4-1639801',
+
+          operator: 'HAS_COMPLETED',
+
+          filterBranchType: 'UNIFIED_EVENTS',
+
+          filterBranchOperator: 'AND'
+        }
+      ],
+
+      listMembershipFilterBranches: []
+    },
+
+    actions: [
+      {
+        type: 'WEBHOOK',
+
+        actionId: '1',
+
+        webhookUrl:
+          'https://meethourhubs.vercel.app/form-webhook',
+
+        method: 'POST',
+
+        queryParams: []
+      }
+    ]
+  },
+
+  {
+    headers: {
+      Authorization:
+        `Bearer ${hubspotAccessToken}`,
+
+      'Content-Type':
+        'application/json'
+    }
+  }
+);
 
       console.log('Workflow created:', workflowRes.data.id);
 
