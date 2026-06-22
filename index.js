@@ -850,30 +850,23 @@ app.get('/callback', async (req, res) => {
     },
 
     actions: [
-      {
-        type: 'WEBHOOK',
-
-        actionId: '1',
-
-        webhookUrl:
-          'https://meethourhubs.vercel.app/form-webhook',
-
-        method: 'POST',
-
-        queryParams: []
-      }
-    ]
-  },
-
   {
-    headers: {
-      Authorization:
-        `Bearer ${hubspotAccessToken}`,
-
-      'Content-Type':
-        'application/json'
-    }
+    type: 'WEBHOOK',
+    actionId: '1',
+    webhookUrl: 'https://meethourhubs.vercel.app/form-webhook',
+    method: 'POST',
+    queryParams: []
   }
+]
+},
+
+{
+  headers: {
+    Authorization: `Bearer ${hubspotAccessToken}`,
+    'Content-Type': 'application/json'
+  }
+}
+
 );
 
       console.log('Workflow created:', workflowRes.data.id);
