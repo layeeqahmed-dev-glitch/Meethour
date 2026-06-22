@@ -833,7 +833,7 @@ app.get('/callback', async (req, res) => {
               method: 'POST',
               queryParams: []
             }
-        },
+        ],
         { headers: { Authorization: `Bearer ${hubspotAccessToken}`, 'Content-Type': 'application/json' } }
       );
 
