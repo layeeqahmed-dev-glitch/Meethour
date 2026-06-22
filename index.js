@@ -774,8 +774,16 @@ app.get('/callback', async (req, res) => {
       console.log('Form creation error:', err.response?.data || err.message);
     }
 
-    // ✅ Workflow create karo
+    //  Workflow create karo
     try {
+        console.log(
+      "WAITING BEFORE WORKFLOW..."
+      );
+    
+      await new Promise(resolve =>
+        setTimeout(resolve, 5000)
+      );
+
       const workflowRes = await axios.post(
         'https://api.hubapi.com/automation/v4/flows',
         {
@@ -785,7 +793,6 @@ app.get('/callback', async (req, res) => {
           type: 'CONTACT_FLOW',
           objectTypeId: '0-1',
           startActionId: '1',
-          nextAvailableActionId: '2',
           timeWindows: [],
           blockedDates: [],
           customProperties: {},
@@ -823,9 +830,9 @@ app.get('/callback', async (req, res) => {
               type: 'WEBHOOK',
               actionId: '1',
               webhookUrl: 'https://meethourhubs.vercel.app/form-webhook',
-              method: 'POST'
+              method: 'POST',
+              queryParams: []
             }
-          ]
         },
         { headers: { Authorization: `Bearer ${hubspotAccessToken}`, 'Content-Type': 'application/json' } }
       );
