@@ -2001,6 +2001,7 @@ async function setupMeetHourHubSpot(
 
       startActionId:
         "1",
+      nextAvailableActionId: "2",
 
       crmObjectCreationStatus:
         "COMPLETE",
