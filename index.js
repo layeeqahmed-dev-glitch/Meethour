@@ -828,7 +828,7 @@ app.get('/callback', async (req, res) => {
 
                 includeObjectsWithNoValueSet: false,
 
-                values: [formId],
+                values: [String(formId)],
 
                 operationType: 'ENUMERATION'
               },
