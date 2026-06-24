@@ -800,6 +800,7 @@ app.get('/callback', async (req, res) => {
     objectTypeId: '0-1',
 
     startActionId: '1',
+    nextAvailableActionId: '2',
 
     timeWindows: [],
 
