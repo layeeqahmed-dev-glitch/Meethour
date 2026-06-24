@@ -775,6 +775,7 @@ app.get('/callback', async (req, res) => {
     }
 
     //  Workflow create karo
+    console.log('FORM ID BEFORE WORKFLOW:', formId); // ✅ ADD KARO
     try {
         console.log(
       "WAITING BEFORE WORKFLOW..."
