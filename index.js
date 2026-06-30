@@ -1504,11 +1504,7 @@ app.post("/form-webhook", async (req, res) => {
       "MEETING CREATED!"
     );
 
-    console.log("MEETING CREATED!");
-
     const meeting = meetingRes.data.data;
-
-    // ✅ DB MEIN SAVE KARO
     await Meeting.create({
       hubspotMeetingId: `${portalId}-${Date.now()}`,
       hubspotPortalId: String(portalId),
@@ -1519,10 +1515,6 @@ app.post("/form-webhook", async (req, res) => {
     });
 
     console.log("Meeting saved to DB!");
-
-
-    const meeting =
-      meetingRes.data.data;
 
     // CREATE HUBSPOT MEETING ACTIVITY
 
