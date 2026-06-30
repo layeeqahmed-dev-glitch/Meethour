@@ -495,7 +495,7 @@ app.get('/callback', async (req, res) => {
                 required: true,
                 hidden: false,
                 dependentFields: [],
-                options: [ 
+                options: [
                   { label: '12:00', value: '12:00', displayOrder: 0 },
                   { label: '12:30', value: '12:30', displayOrder: 1 },
                   { label: '01:00', value: '01:00', displayOrder: 2 },
@@ -1504,6 +1504,23 @@ app.post("/form-webhook", async (req, res) => {
       "MEETING CREATED!"
     );
 
+    console.log("MEETING CREATED!");
+
+    const meeting = meetingRes.data.data;
+
+    // ✅ DB MEIN SAVE KARO
+    await Meeting.create({
+      hubspotMeetingId: `${portalId}-${Date.now()}`,
+      hubspotPortalId: String(portalId),
+      meethourMeetingId: meeting.meeting_id,
+      meethourMeetingUrl: meeting.joinURL,
+      meetingName: meeting_name,
+      conferenceId: String(meeting.id)
+    });
+
+    console.log("Meeting saved to DB!");
+
+
     const meeting =
       meetingRes.data.data;
 
@@ -1714,15 +1731,15 @@ async function setupMeetHourHubSpot(
     // CREATE WORKFLOW
 
     const workflowPayload = {
-      name:"MeetHour Form Workflow",
-      type:"CONTACT_FLOW",
-      flowType:"WORKFLOW",
+      name: "MeetHour Form Workflow",
+      type: "CONTACT_FLOW",
+      flowType: "WORKFLOW",
       isEnabled: true,
-      objectTypeId:"0-1",
-      startActionId:"1",
+      objectTypeId: "0-1",
+      startActionId: "1",
       nextAvailableActionId: "2",
-      crmObjectCreationStatus:"COMPLETE",
-      canEnrollFromSalesforce:false,
+      crmObjectCreationStatus: "COMPLETE",
+      canEnrollFromSalesforce: false,
       actions: [
         {
           actionId: "1",
@@ -1735,26 +1752,26 @@ async function setupMeetHourHubSpot(
       ],
 
       enrollmentCriteria: {
-        type:"EVENT_BASED",
+        type: "EVENT_BASED",
         shouldReEnroll: true,
         eventFilterBranches: [
           {
-            eventTypeId:"4-1639801",
-            operator:"HAS_COMPLETED",
-            filterBranchType:"UNIFIED_EVENTS",
-            filterBranchOperator:"AND",
+            eventTypeId: "4-1639801",
+            operator: "HAS_COMPLETED",
+            filterBranchType: "UNIFIED_EVENTS",
+            filterBranchOperator: "AND",
             filters: [
               {
-                property:"hs_form_id",
+                property: "hs_form_id",
                 operation: {
-                  operator:"IS_ANY_OF",
-                  includeObjectsWithNoValueSet:false,
+                  operator: "IS_ANY_OF",
+                  includeObjectsWithNoValueSet: false,
                   values: [
                     formId
                   ],
-                  operationType:"ENUMERATION"
+                  operationType: "ENUMERATION"
                 },
-                filterType:"PROPERTY"
+                filterType: "PROPERTY"
               }
             ],
             filterBranches: []
@@ -1773,7 +1790,7 @@ async function setupMeetHourHubSpot(
           headers: {
             Authorization:
               `Bearer ${accessToken}`,
-              "Content-Type":"application/json"
+            "Content-Type": "application/json"
           }
         }
       );
