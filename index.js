@@ -708,7 +708,7 @@ app.get('/meethour-callback', async (req, res) => {
     console.log('MeetHour token saved for portal:', pendingRecord.hubspotPortalId);
     console.log('MeetHour user email saved:', meethourUserEmail);
 
-    res.send('MeetHour connected successfully! You can close this tab.');
+    res.redirect('https://app-na2.hubspot.com');
 
   } catch (err) {
     console.error('MeetHour Callback Error:', err.message);
