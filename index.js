@@ -1152,14 +1152,13 @@ app.post('/deal-webhook', async (req, res) => {
           },
           metadata: {
             title: ` ${dealName}`,
-            body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
-
-            <b>Topic:</b> ${meeting.topic}<br>
-            <b>Time:</b>${formattedTime}<br><br>
-            <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
-            <b>Meeting ID:</b> ${meeting.meeting_id}<br>
-            <b>Passcode:</b> ${meeting.passcode}`
-          }
+            body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>  
+                  <b>Topic:</b> ${meeting_name}<br>
+                  <b>Time:</b> ${meeting_time} ${meeting_meridiem} ${timezone}<br><br>
+                  <b>Join Meet Hour Meeting:</b> ${meeting.joinURL}<br><br>
+                  <b>Meeting ID:</b> ${meeting.meeting_id}<br>
+                  <b>Passcode:</b> ${meeting.passcode}`,
+            },
         },
         {
           headers: {
@@ -1544,10 +1543,8 @@ app.post("/form-webhook", async (req, res) => {
               title: `${meeting_name}`,
               body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>  
                   <b>Topic:</b> ${meeting_name}<br>
-                  <b>Date:</b> ${meeting_date}<br>
-                  <b>Time:</b> ${meeting_time} ${meeting_meridiem}<br>
-                  <b>Timezone:</b> ${timezone}<br><br>
-                  <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
+                  <b>Time:</b> ${meeting_time} ${meeting_meridiem} ${timezone}<br><br>
+                  <b>Join Meet Hour Meeting:</b> ${meeting.joinURL}<br><br>
                   <b>Meeting ID:</b> ${meeting.meeting_id}<br>
                   <b>Passcode:</b> ${meeting.passcode}`,
             },
