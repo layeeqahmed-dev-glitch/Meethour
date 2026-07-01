@@ -1545,7 +1545,7 @@ app.post("/form-webhook", async (req, res) => {
               body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>  
                   <b>Topic:</b> ${meeting_name}<br>
                   <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
-                  <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
+                  <b>Join MeetHour Meeting:</b> ${meeting.joinURL}<br><br>
                   <b>Meeting ID:</b> ${meeting.meeting_id}<br>
                   <b>Passcode:</b> ${meeting.passcode}`,
             },
