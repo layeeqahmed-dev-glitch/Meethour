@@ -1151,7 +1151,7 @@ app.post('/deal-webhook', async (req, res) => {
             dealIds: [Number(objectId)]
           },
           metadata: {
-            title: `- ${dealName}`,
+            title: ` ${dealName}`,
             body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
 
             <b>Topic:</b> ${meeting.topic}<br>
@@ -1541,7 +1541,7 @@ app.post("/form-webhook", async (req, res) => {
               contactIds: [Number(contactId)],
             },
             metadata: {
-              title: `- ${meeting_name}`,
+              title: `${meeting_name}`,
               body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>  
                   <b>Topic:</b> ${meeting_name}<br>
                   <b>Date:</b> ${meeting_date}<br>
