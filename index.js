@@ -773,7 +773,7 @@ app.post("/create-meeting", async (req, res) => {
     const token = tokenRecord.meethourAccessToken;
     const meethourUserId = tokenRecord.meethourUserId;
 
-    // MeetHour user details fetch karo — timezone lene ke liye
+    // Fetching User Deatails API to get timezone
     const userDetailsRes = await axios.post(
       "https://api.meethour.io/api/v1.2/customer/user_details",
       {},
@@ -1151,7 +1151,7 @@ app.post('/deal-webhook', async (req, res) => {
             dealIds: [Number(objectId)]
           },
           metadata: {
-            title: `${dealName} - MeetHour Meeting`,
+            title: `- ${dealName}`,
             body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
 
             <b>Topic:</b> ${meeting.topic}<br>
@@ -1541,7 +1541,7 @@ app.post("/form-webhook", async (req, res) => {
               contactIds: [Number(contactId)],
             },
             metadata: {
-              title: `${meeting_name} - MeetHour Meeting`,
+              title: `- ${meeting_name}`,
               body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>  
                   <b>Topic:</b> ${meeting_name}<br>
                   <b>Date:</b> ${meeting_date}<br>
