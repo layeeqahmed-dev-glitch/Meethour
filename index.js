@@ -1157,7 +1157,7 @@ app.post('/deal-webhook', async (req, res) => {
 
             hs_meeting_external_url: meeting.joinURL,
             hs_meeting_location: meeting.joinURL,
-            hs_meeting_location_type: 'VIDEO_CONFERENCE',
+            hs_meeting_location_type: 'VCE',
             hs_meeting_outcome: 'SCHEDULED'
           },
           associations: [
