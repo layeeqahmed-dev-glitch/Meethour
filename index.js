@@ -1541,9 +1541,9 @@ app.post("/form-webhook", async (req, res) => {
     console.log("CONTACT ID:", contactId);
 
     if (contactId) {
-      
       try {
         const startTimestamp = Date.now();
+
         let hubspotOwnerId;
         try {
           const ownersRes = await axios.get(
@@ -1561,14 +1561,15 @@ app.post("/form-webhook", async (req, res) => {
           {
             properties: {
               hs_timestamp: startTimestamp,
+              hubspot_owner_id: hubspotOwnerId,
 
               hs_meeting_title: meeting_name,
               hs_meeting_body: `<br><br><b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
-              <b>Topic:</b> ${meeting_name}<br>
-              <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
-              <b>Join MeetHour Meeting:</b> ${meeting.joinURL}<br><br>
-              <b>Meeting ID:</b> ${meeting.meeting_id}<br>
-              <b>Passcode:</b> ${meeting.passcode}`,
+                  <b>Topic:</b> ${meeting_name}<br>
+                  <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
+                  <b>Join MeetHour Meeting:</b> ${meeting.joinURL}<br><br>
+                  <b>Meeting ID:</b> ${meeting.meeting_id}<br>
+                  <b>Passcode:</b> ${meeting.passcode}`,
 
               hs_meeting_start_time: new Date(startTimestamp).toISOString(),
 
