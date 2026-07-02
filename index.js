@@ -1545,15 +1545,17 @@ app.post("/form-webhook", async (req, res) => {
         const startTimestamp = Date.now();
 
         let hubspotOwnerId;
-        try {
-          const ownersRes = await axios.get(
-            `https://api.hubapi.com/crm/v3/owners?email=${tokenRecord.meethourUserEmail}`,
-            { headers: { Authorization: `Bearer ${hubspotToken}` } }
-          );
-          hubspotOwnerId = ownersRes.data.results?.[0]?.id;
-          console.log("OWNER LOOKUP RESULT:", tokenRecord.meethourUserEmail, "->", hubspotOwnerId);
-        } catch (ownerErr) {
-          console.log("OWNER LOOKUP ERROR:", ownerErr.response?.data || ownerErr.message);
+        if (contactId) {
+          try {
+            const contactRes = await axios.get(
+              `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=hubspot_owner_id`,
+              { headers: { Authorization: `Bearer ${hubspotToken}` } }
+            );
+            hubspotOwnerId = contactRes.data.properties?.hubspot_owner_id;
+            console.log("CONTACT OWNER ID:", hubspotOwnerId);
+          } catch (contactOwnerErr) {
+            console.log("CONTACT OWNER LOOKUP ERROR:", contactOwnerErr.response?.data || contactOwnerErr.message);
+          }
         }
 
         await axios.post(
@@ -1564,7 +1566,7 @@ app.post("/form-webhook", async (req, res) => {
               hubspot_owner_id: hubspotOwnerId,
 
               hs_meeting_title: meeting_name,
-              hs_meeting_body: `<br><br><b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
+              hs_meeting_body: `<br><br><b>${ownerName} is inviting you to a scheduled meeting.</b><br>
                   <b>Topic:</b> ${meeting_name}<br>
                   <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
                   <b>Join MeetHour Meeting:</b> ${meeting.joinURL}<br><br>
@@ -1592,7 +1594,6 @@ app.post("/form-webhook", async (req, res) => {
             },
           }
         );
-
         console.log("MEETING ENGAGEMENT CREATED!");
 
       } catch (activityErr) {
