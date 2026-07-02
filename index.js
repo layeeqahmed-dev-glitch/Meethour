@@ -1163,7 +1163,8 @@ app.post('/deal-webhook', async (req, res) => {
             endTime: startTimestamp + (60 * 60 * 1000),
             externalUrl: meeting.joinURL, 
             location: meeting.joinURL,
-            location_type:"Video Conference"
+            locationType: 'Video Conference',
+            meetingOutcome: 'Scheduled' 
           }
         },
         {
