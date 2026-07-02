@@ -1136,34 +1136,40 @@ app.post('/deal-webhook', async (req, res) => {
       // CHANGE 2 & 3: log as engagement type MEETING so it shows in HubSpot Meetings tab
       const formattedTime = `${meeting_time} ${meeting_meridiem} (${timezone})`;
       const startTimestamp = new Date(`${meeting_date} ${meeting_time} ${meeting_meridiem}`).getTime();
+      const endTimestamp = startTimestamp + (60 * 60 * 1000);
 
       await axios.post(
-        'https://api.hubspot.com/engagements/v1/engagements',
+        'https://api.hubapi.com/crm/v3/objects/meetings',
         {
-          engagement: {
-            active: true,
-            ownerId: ownerId ? Number(ownerId) : undefined,
-            type: 'MEETING',
-            timestamp: startTimestamp || Date.now()
-          },
-          associations: {
-            contactIds: [Number(contactId)],
-            dealIds: [Number(objectId)]
-          },
-          metadata: {
-            title: `${dealName}`,
-            body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
-            <b>Topic:</b> ${meeting.topic}<br>
+          properties: {
+            hs_timestamp: startTimestamp || Date.now(),
+            hubspot_owner_id: ownerId ? Number(ownerId) : undefined,
+
+            hs_meeting_title: dealName,
+            hs_meeting_body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
             <b>Date & Time:</b> ${meeting_date}, ${formattedTime}<br><br>
             <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
             <b>Meeting ID:</b> ${meeting.meeting_id}<br>
             <b>Passcode:</b> ${meeting.passcode}`,
 
-            startTime: startTimestamp, 
-            endTime: startTimestamp + (60 * 60 * 1000),
-            externalUrl: meeting.joinURL, 
-            location: meeting.joinURL
-          }
+            hs_meeting_start_time: new Date(startTimestamp).toISOString(),
+            hs_meeting_end_time: new Date(endTimestamp).toISOString(),
+
+            hs_meeting_external_url: meeting.joinURL,
+            hs_meeting_location: meeting.joinURL,
+            hs_meeting_location_type: 'VIDEO_CONFERENCE',
+            hs_meeting_outcome: 'SCHEDULED'
+          },
+          associations: [
+            {
+              to: { id: Number(contactId) },
+              types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 200 }]
+            },
+            {
+              to: { id: Number(objectId) },
+              types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 212 }]
+            }
+          ]
         },
         {
           headers: {
