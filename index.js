@@ -1153,12 +1153,16 @@ app.post('/deal-webhook', async (req, res) => {
           metadata: {
             title: `${dealName}`,
             body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
-
             <b>Topic:</b> ${meeting.topic}<br>
             <b>Time:</b>${formattedTime}<br><br>
             <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
             <b>Meeting ID:</b> ${meeting.meeting_id}<br>
-            <b>Passcode:</b> ${meeting.passcode}`
+            <b>Passcode:</b> ${meeting.passcode}`,
+            
+            startTime: startTimestamp, 
+            endTime: startTimestamp + (60 * 60 * 1000),
+            externalUrl: meeting.joinURL, 
+            location: meeting.joinURL
           }
         },
         {
