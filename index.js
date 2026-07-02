@@ -1611,8 +1611,6 @@ app.post("/form-webhook", async (req, res) => {
     });
   }
 });
-
-
 // CREATE FORM + WORKFLOW FUNCTION
 
 async function setupMeetHourHubSpot(
