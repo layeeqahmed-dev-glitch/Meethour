@@ -1146,7 +1146,8 @@ app.post('/deal-webhook', async (req, res) => {
             hubspot_owner_id: ownerId ? Number(ownerId) : undefined,
 
             hs_meeting_title: dealName,
-            hs_meeting_body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
+            hs_meeting_body: `<b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+            <b>Topic:</b> ${meeting_name}<br>
             <b>Date & Time:</b> ${meeting_date}, ${formattedTime}<br><br>
             <b>Join MeetHour:</b> ${meeting.joinURL}<br><br>
             <b>Meeting ID:</b> ${meeting.meeting_id}<br>
