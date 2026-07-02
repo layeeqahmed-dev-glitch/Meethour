@@ -1539,26 +1539,35 @@ app.post("/form-webhook", async (req, res) => {
 
     if (contactId) {
       try {
+        const startTimestamp = Date.now();
+
         await axios.post(
-          "https://api.hubapi.com/engagements/v1/engagements",
+          "https://api.hubapi.com/crm/v3/objects/meetings",
           {
-            engagement: {
-              active: true,
-              type: "MEETING",
-              timestamp: Date.now(),
-            },
-            associations: {
-              contactIds: [Number(contactId)],
-            },
-            metadata: {
-              title: `${meeting_name}`,
-              body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>  
+            properties: {
+              hs_timestamp: startTimestamp,
+
+              hs_meeting_title: meeting_name,
+              hs_meeting_body: `<b>${firstname} ${lastname}</b> scheduled a meeting.<br><br>
                   <b>Topic:</b> ${meeting_name}<br>
                   <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
                   <b>Join MeetHour Meeting:</b> ${meeting.joinURL}<br><br>
                   <b>Meeting ID:</b> ${meeting.meeting_id}<br>
                   <b>Passcode:</b> ${meeting.passcode}`,
+
+              hs_meeting_start_time: new Date(startTimestamp).toISOString(),
+
+              hs_meeting_external_url: meeting.joinURL,
+              hs_meeting_location: meeting.joinURL,
+              hs_meeting_location_type: "VCE",
+              hs_meeting_outcome: "SCHEDULED",
             },
+            associations: [
+              {
+                to: { id: Number(contactId) },
+                types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 200 }],
+              },
+            ],
           },
           {
             headers: {
