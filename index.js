@@ -1558,6 +1558,36 @@ app.post("/form-webhook", async (req, res) => {
           }
         }
 
+        // Fallback: contact has no owner assigned, grab the first owner in the portal
+        if (!hubspotOwnerId) {
+          try {
+            const ownersRes = await axios.get(
+              `https://api.hubapi.com/crm/v3/owners`,
+              { headers: { Authorization: `Bearer ${hubspotToken}` } }
+            );
+            hubspotOwnerId = ownersRes.data.results?.[0]?.id;
+            console.log("FALLBACK OWNER ID:", hubspotOwnerId);
+          } catch (fallbackErr) {
+            console.log("FALLBACK OWNER LOOKUP ERROR:", fallbackErr.response?.data || fallbackErr.message);
+          }
+        }
+
+        // Resolve the owner's actual name for the message body
+        let ownerName = "Host";
+        if (hubspotOwnerId) {
+          try {
+            const ownerDetailRes = await axios.get(
+              `https://api.hubapi.com/crm/v3/owners/${hubspotOwnerId}`,
+              { headers: { Authorization: `Bearer ${hubspotToken}` } }
+            );
+            const owner = ownerDetailRes.data;
+            ownerName = `${owner.firstName || ""} ${owner.lastName || ""}`.trim() || "Host";
+            console.log("OWNER NAME:", ownerName);
+          } catch (ownerDetailErr) {
+            console.log("OWNER DETAIL LOOKUP ERROR:", ownerDetailErr.response?.data || ownerDetailErr.message);
+          }
+        }
+
         await axios.post(
           "https://api.hubapi.com/crm/v3/objects/meetings",
           {
