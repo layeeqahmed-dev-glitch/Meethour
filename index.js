@@ -1604,7 +1604,7 @@ app.post("/form-webhook", async (req, res) => {
                   <b>Passcode:</b> ${meeting.passcode}`,
 
               hs_meeting_start_time: new Date(startTimestamp).toISOString(),
-
+              endTime: startTimestamp + (60 * 60 * 1000),
               hs_meeting_external_url: meeting.joinURL,
               hs_meeting_location: meeting.joinURL,
               hs_meeting_location_type: "VCE",
