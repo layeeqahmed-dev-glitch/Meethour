@@ -3173,18 +3173,6 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
   }
 }
 
-app.get("/test-refresh-token", async (req, res) => {
-  try {
-    await connectDB(); // PEHLE YEH
-    const token = await refreshHubspotToken(246208918);
-    console.log("Fresh token:", token);
-    res.json({ token });
-  } catch (err) {
-    console.log("Error:", err.message);
-    res.json({ error: err.message });
-  }
-});
-
 //localhost running @ 3000
 if (process.env.NODE_ENV !== "production") {
   app.listen(3000, () => console.log("Server running on port 3000"));
