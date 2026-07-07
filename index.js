@@ -2709,7 +2709,7 @@ app.post("/form-webhook", async (req, res) => {
     await connectDB();
 
     // ======================================================
-    // HUBSPOT DEFAULT WEBHOOK STRUCTURE
+    // HUBSPOT WEBHOOK STRUCTURE
     // ======================================================
 
     const body = req.body || {};
@@ -2727,11 +2727,6 @@ app.post("/form-webhook", async (req, res) => {
     console.log("DATE:", rawDate);
     console.log("TIME:", rawTime);
 
-    // ======================================================
-    // DATE FORMAT
-    // OUTPUT:
-    // 2026-06-17
-    // ======================================================
 
     let meeting_date = rawDate;
 
@@ -2751,7 +2746,6 @@ app.post("/form-webhook", async (req, res) => {
 
     // ======================================================
     // TIME FORMAT
-    // OUTPUT:
     // 04:00
     // ======================================================
 
@@ -2834,7 +2828,6 @@ app.post("/form-webhook", async (req, res) => {
     console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
 
     // CREATE MEETING
-
     const meetingRes = await axios.post(
       "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
       payload,
