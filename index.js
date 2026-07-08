@@ -2080,7 +2080,7 @@ app.get("/meethour-callback", async (req, res) => {
     );
     console.log("MeetHour user email saved:", meethourUserEmail);
 
-    res.redirect(`https://app-na2.hubspot.com/connected-apps/${portalId}/installed`);
+    res.redirect(`https://app-na2.hubspot.com/connected-apps/${pendingRecord.hubspotPortalId}/installed`);
   } catch (err) {
     console.error("MeetHour Callback Error:", err.message);
     res.status(500).send("Something went wrong!");
