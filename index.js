@@ -2267,8 +2267,8 @@ app.post("/create-meeting", async (req, res) => {
 
     const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br>
       <b>Topic:</b> ${meeting.topic}
-      <b>Time:</b> ${formattedTime} (${resolvedTimezone})
-      <b>Join MeetHour Meeting</b>: ${meeting.joinURL}
+      <b>Time:</b> ${formattedTime} (${resolvedTimezone})<br>
+      <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br>
       <b>Meeting ID:</b> ${meeting.meeting_id}
       <b>Passcode:</b> ${meeting.passcode}
     `;
