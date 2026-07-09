@@ -2080,7 +2080,9 @@ app.get("/meethour-callback", async (req, res) => {
     );
     console.log("MeetHour user email saved:", meethourUserEmail);
 
-    res.redirect(`https://app-na2.hubspot.com/connected-apps/${pendingRecord.hubspotPortalId}/installed`);
+    res.redirect(
+      `https://app-na2.hubspot.com/connected-apps/${pendingRecord.hubspotPortalId}/installed`,
+    );
   } catch (err) {
     console.error("MeetHour Callback Error:", err.message);
     res.status(500).send("Something went wrong!");
@@ -2208,6 +2210,7 @@ app.post("/create-meeting", async (req, res) => {
       duration_hr,
       duration_min,
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : [],
+      options: ["ALLOW_GUEST","JOIN_ANYTIME, ENABLE_LOBBY","WHITE_BORAD","LIVEPAD","DONOR_BOX","CP_CONNECT"],
     };
 
     console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
@@ -2725,7 +2728,6 @@ app.post("/form-webhook", async (req, res) => {
     console.log("EMAIL:", email);
     console.log("DATE:", rawDate);
     console.log("TIME:", rawTime);
-
 
     let meeting_date = rawDate;
 
