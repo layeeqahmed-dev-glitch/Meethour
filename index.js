@@ -1956,7 +1956,8 @@ app.get("/callback", async (req, res) => {
           type: "CONTACT_FLOW",
           objectTypeId: "0-1",
           startActionId: "1",
-          nextAvailableActionId: "2",
+          crmObjectCreationStatus: "COMPLETE",
+          nextAvailable: "2",
           timeWindows: [],
           blockedDates: [],
           customProperties: {},
@@ -1994,6 +1995,7 @@ app.get("/callback", async (req, res) => {
               webhookUrl: "https://meethourhubs.vercel.app/form-webhook",
               method: "POST",
               queryParams: [],
+              authSettings: { type: "NONE" },
             },
           ],
         },
@@ -2209,7 +2211,15 @@ app.post("/create-meeting", async (req, res) => {
       duration_hr,
       duration_min,
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : [],
-      options: ["ALLOW_GUEST","JOIN_ANYTIME", "ENABLE_LOBBY","WHITE_BORAD","LIVEPAD","DONOR_BOX","CP_CONNECT"],
+      options: [
+        "ALLOW_GUEST",
+        "JOIN_ANYTIME",
+        "ENABLE_LOBBY",
+        "WHITE_BORAD",
+        "LIVEPAD",
+        "DONOR_BOX",
+        "CP_CONNECT",
+      ],
     };
 
     console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
@@ -2985,7 +2995,6 @@ app.post("/deal-webhook", async (req, res) => {
 //     });
 //   }
 // });
-
 
 // // CREATE FORM + WORKFLOW FUNCTION
 // async function setupMeetHourHubSpot(portalId, accessToken) {
