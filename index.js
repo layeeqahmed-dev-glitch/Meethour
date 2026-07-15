@@ -1994,6 +1994,7 @@ app.get("/callback", async (req, res) => {
               webhookUrl: "https://meethourhubs.vercel.app/form-webhook",
               method: "POST",
               queryParams: [],
+              authSettings: { type: "NONE" },
             },
           ],
         },
