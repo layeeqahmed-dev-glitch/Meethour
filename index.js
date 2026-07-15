@@ -1945,6 +1945,7 @@ app.get("/callback", async (req, res) => {
     console.log("FORM ID BEFORE WORKFLOW:", formId);
     try {
       console.log("WAITING BEFORE WORKFLOW...");
+      
 
       await new Promise((resolve) => setTimeout(resolve, 5000));
       const workflowRes = await axios.post(
@@ -2011,6 +2012,8 @@ app.get("/callback", async (req, res) => {
     } catch (err) {
       console.log(
         "FULL WORKFLOW ERROR:",
+         console.log("STATUS:", err.response?.status),
+        console.log("HEADERS:", err.response?.headers),
         JSON.stringify(err.response?.data, null, 2),
       );
       console.log(
