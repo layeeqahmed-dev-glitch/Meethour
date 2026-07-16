@@ -1945,7 +1945,7 @@ app.get("/callback", async (req, res) => {
     console.log("FORM ID BEFORE WORKFLOW:", formId);
     try {
       console.log("WAITING BEFORE WORKFLOW...");
-      
+
 
       await new Promise((resolve) => setTimeout(resolve, 5000));
       const workflowRes = await axios.post(
@@ -2010,16 +2010,9 @@ app.get("/callback", async (req, res) => {
 
       console.log("Workflow created:", workflowRes.data.id);
     } catch (err) {
-      console.log(
-        "FULL WORKFLOW ERROR:",
-         console.log("STATUS:", err.response?.status),
-        console.log("HEADERS:", err.response?.headers),
-        JSON.stringify(err.response?.data, null, 2),
-      );
-      console.log(
-        "Workflow creation error:",
-        err.response?.data || err.message,
-      );
+      console.log("STATUS:", err.response?.status);
+      console.log("HEADERS:", err.response?.headers);
+      console.log("FULL WORKFLOW ERROR:", JSON.stringify(err.response?.data, null, 2));
     }
 
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
@@ -2213,7 +2206,7 @@ app.post("/create-meeting", async (req, res) => {
       duration_hr,
       duration_min,
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : [],
-      options: ["ALLOW_GUEST","JOIN_ANYTIME", "ENABLE_LOBBY","WHITE_BORAD","LIVEPAD","DONOR_BOX","CP_CONNECT"],
+      options: ["ALLOW_GUEST", "JOIN_ANYTIME", "ENABLE_LOBBY", "WHITE_BORAD", "LIVEPAD", "DONOR_BOX", "CP_CONNECT"],
     };
 
     console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
