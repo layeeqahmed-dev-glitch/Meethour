@@ -2080,7 +2080,9 @@ app.get("/meethour-callback", async (req, res) => {
     );
     console.log("MeetHour user email saved:", meethourUserEmail);
 
-    res.redirect("https://app-na2.hubspot.com");
+    res.redirect(
+      `https://app-na2.hubspot.com/connected-apps/${pendingRecord.hubspotPortalId}/installed`,
+    );
   } catch (err) {
     console.error("MeetHour Callback Error:", err.message);
     res.status(500).send("Something went wrong!");
@@ -2266,10 +2268,10 @@ app.post("/create-meeting", async (req, res) => {
     console.log("========== END DEBUG ==========");
 
     const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br>
-      <b>Topic:</b> ${meeting.topic}<br>
-      <b>Time:</b> ${formattedTime} (${resolvedTimezone})<br><br>
-      <b>Join MeetHour Meeting</b>: ${meeting.joinURL}<br><br>
-      <b>Meeting ID:</b> ${meeting.meeting_id}<br>
+      <b>Topic:</b> ${meeting.topic}
+      <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})<br>
+      <b>Meeting Url</b>: ${meeting.joinURL}<br>
+      <b>Meeting ID:</b> ${meeting.meeting_id}
       <b>Passcode:</b> ${meeting.passcode}
     `;
 
