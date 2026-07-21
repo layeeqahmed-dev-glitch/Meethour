@@ -2927,7 +2927,7 @@ app.post("/form-webhook", async (req, res) => {
               hubspot_owner_id: hubspotOwnerId,
 
               hs_meeting_title: meeting_name,
-              hs_meeting_body: `<br><b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+              hs_meeting_body: `<br><b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
                   <b>Topic:</b> ${meeting_name}<br>
                   <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
                   <b>Meeting Url:</b> ${meeting.joinURL}<br><br>
