@@ -2267,10 +2267,10 @@ app.post("/create-meeting", async (req, res) => {
     console.log("FINAL OWNER NAME:", ownerName);
     console.log("========== END DEBUG ==========");
 
-    const details = `<br><b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+    const details = `<br><b>${ownerName} is inviting you to a scheduled meeting.</b>
       <b>Topic:</b> ${meeting.topic}
-      <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})<br>
-      <b>Meeting Url</b>: ${meeting.joinURL}<br>
+      <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})
+      <b>Meeting Url</b>: ${meeting.joinURL}
       <b>Meeting ID:</b> ${meeting.meeting_id}
       <b>Passcode:</b> ${meeting.passcode}
     `;
