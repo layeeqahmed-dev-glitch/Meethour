@@ -86,7 +86,7 @@ const refreshHubspotToken = async (portalId) => {
 
 //root
 app.get("/", (req, res) => {
-  res.send("Server is responding on meethourhubs.vercel.app !");
+  res.send("Server is responding");
 });
 
 //calback
@@ -2267,7 +2267,7 @@ app.post("/create-meeting", async (req, res) => {
     console.log("FINAL OWNER NAME:", ownerName);
     console.log("========== END DEBUG ==========");
 
-    const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+    const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
       <b>Topic:</b> ${meeting.topic}
       <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})<br>
       <b>Meeting Url</b>: ${meeting.joinURL}<br>
@@ -2986,8 +2986,8 @@ app.post("/form-webhook", async (req, res) => {
     });
   }
 });
-// CREATE FORM + WORKFLOW FUNCTION
 
+// CREATE FORM & WORKFLOW FUNCTION
 async function setupMeetHourHubSpot(portalId, accessToken) {
   try {
     console.log("===== STARTING HUBSPOT SETUP =====");
@@ -3088,7 +3088,6 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
     console.log("FORM ID:", formId);
 
     // CREATE WORKFLOW
-
     const workflowPayload = {
       name: "MeetHour Form Workflow",
       type: "CONTACT_FLOW",
