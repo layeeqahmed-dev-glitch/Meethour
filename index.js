@@ -2267,13 +2267,12 @@ app.post("/create-meeting", async (req, res) => {
     console.log("FINAL OWNER NAME:", ownerName);
     console.log("========== END DEBUG ==========");
 
-    const details = `<br><b>${ownerName} is inviting you to a scheduled meeting.</b>
-      <b>Topic:</b> ${meeting.topic}
-      <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})
-      <b>Meeting Url</b>: ${meeting.joinURL}
-      <b>Meeting ID:</b> ${meeting.meeting_id}
-      <b>Passcode:</b> ${meeting.passcode}
-    `;
+    const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
+      + <b>Topic:</b> ${meeting.topic}<br>
+      + <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})<br>
+      + <b>Meeting Url</b>: ${meeting.joinURL}<br>
+      + <b>Meeting ID:</b> ${meeting.meeting_id}<br>
+      + <b>Passcode:</b> ${meeting.passcode}`;
 
     await Meeting.create({
       hubspotMeetingId: `${req.body.portalId}-${req.body.startTime}`,
