@@ -2267,7 +2267,7 @@ app.post("/create-meeting", async (req, res) => {
     console.log("FINAL OWNER NAME:", ownerName);
     console.log("========== END DEBUG ==========");
 
-    const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br>
+    const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
       <b>Topic:</b> ${meeting.topic}
       <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})<br>
       <b>Meeting Url</b>: ${meeting.joinURL}<br>
