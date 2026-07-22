@@ -3025,7 +3025,6 @@ app.get("/api/meethour-meetings", async (req, res) => {
     const meetingsRes = await axios.post(
       endpoint,
       {},
-      { page: 1, per_page: 10 },
       {
         headers: {
           Authorization: `Bearer ${meethourToken}`,
