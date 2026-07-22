@@ -5,7 +5,6 @@ import {
   Button,
   Tab,
   Text,
-  Link,
   ButtonRow,
   Flex,
   Box,
@@ -114,11 +113,22 @@ const MeetingCard = ({ m, type }) => (
           {m.startTime} ({m.timezone})
         </Text>
       </Flex>
-      {type === "upcoming" && (  <Button href={m.joinURL} external={true} variant="secondary" size="sm">  Join Meeting </Button>  )}
+      {type === "upcoming" && (
+        <Button
+          href={{
+            url: m.joinURL,
+            external: true,
+          }}
+          variant="secondary"
+          size="md"
+          type="button"
+        >
+          Join Meeting
+        </Button>
+      )}
     </Flex>
   </Tile>
 );
-
 const MeetingsList = ({ meetings, loading, type }) => {
   if (loading) return <LoadingSpinner label="Loading meetings..." />;
   if (!meetings.length) return <Text>No meetings found.</Text>;
