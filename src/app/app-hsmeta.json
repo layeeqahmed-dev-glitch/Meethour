@@ -29,7 +29,8 @@
     },
     "permittedUrls": {
       "fetch": [
-        "https://api.hubapi.com"
+        "https://api.hubapi.com",
+        "https://meethourhubs.vercel.app"
       ],
       "iframe": [],
       "img": []
