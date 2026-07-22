@@ -5,6 +5,7 @@ import {
   Tab,
   Text,
   Link,
+  Flex,
   Button,
   ButtonRow,
   LoadingSpinner,
@@ -88,13 +89,13 @@ const MeetingsList = ({ meetings, loading }) => {
   return (
     <>
       {meetings.map((m) => (
-        <Tile key={m.id} compact>
-          <Text format={{ fontWeight: "bold" }}>{m.topic}</Text>
+        <Flex key={m.id} direction="column" gap="xs">
+          <Text variant="microcopy">{m.topic}</Text>
           <Text>
             {m.startTime} ({m.timezone})
           </Text>
           <Link href={m.joinURL}>Join Meeting</Link>
-        </Tile>
+        </Flex>
       ))}
     </>
   );
