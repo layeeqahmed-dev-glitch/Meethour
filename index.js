@@ -3018,8 +3018,8 @@ app.get("/api/meethour-meetings", async (req, res) => {
 
     const endpoint =
       type === "completed"
-        ? "https://api.meethour.io/api/v2/meeting/completedmeetings"
-        : "https://api.meethour.io/api/v2/meeting/upcomingmeetings";
+        ? "https://api.meethour.io/api/v1.2/meeting/completedmeetings"
+        : "https://api.meethour.io/api/v1.2/meeting/upcomingmeetings";
 
     const meetingsRes = await axios.get(endpoint, {
       headers: {
