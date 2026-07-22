@@ -22,7 +22,7 @@ const Dashboard = ({ context }) => {
 
   useEffect(() => {
     if (selected !== "my-meetings") return;
-
+    if (meetingsCache[meetingType]) return; // already fetched, skip
     let cancelled = false;
     setLoading(true);
 
@@ -33,7 +33,7 @@ const Dashboard = ({ context }) => {
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setMeetings(data.meetings || []);
+        setMeetingsCache((prev) => ({ ...prev, [meetingType]: data.meetings || [] }));
         setLoading(false);
       })
       .catch(() => {
@@ -64,7 +64,7 @@ const Dashboard = ({ context }) => {
             </Button>
           </ButtonRow>
           <MeetingsList
-            meetings={meetings}
+            meetings={meetingsCache[meetingType] || []}
             loading={loading}
             type={meetingType}
           />
