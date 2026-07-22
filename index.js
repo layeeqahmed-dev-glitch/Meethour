@@ -2986,6 +2986,7 @@ app.post("/form-webhook", async (req, res) => {
   }
 });
 
+
 app.get("/api/meethour-meetings", async (req, res) => {
   try {
     console.log("===== MEETHOUR MEETINGS =====");
@@ -3021,11 +3022,15 @@ app.get("/api/meethour-meetings", async (req, res) => {
         ? "https://api.meethour.io/api/v1.2/meeting/completedmeetings"
         : "https://api.meethour.io/api/v1.2/meeting/upcomingmeetings";
 
-    const meetingsRes = await axios.get(endpoint, {
-      headers: {
-        Authorization: `Bearer ${meethourToken}`,
+    const meetingsRes = await axios.post(
+      endpoint,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${meethourToken}`,
+        },
       },
-    });
+    );
 
     const meetings = (meetingsRes.data.meetings || []).map((m) => ({
       id: m.id,
@@ -3055,6 +3060,7 @@ app.get("/api/meethour-meetings", async (req, res) => {
     });
   }
 });
+
 
 // CREATE FORM & WORKFLOW FUNCTION
 async function setupMeetHourHubSpot(portalId, accessToken) {
@@ -3233,8 +3239,6 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
     };
   }
 }
-
-
 
 //localhost running @ 3000
 if (process.env.NODE_ENV !== "production") {
