@@ -17,12 +17,16 @@ hubspot.extend(({ context }) => <Dashboard context={context} />);
 const Dashboard = ({ context }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
-  const [meetingsCache, setMeetingsCache] = useState({ upcoming: null, completed: null });
+  const [meetingsCache, setMeetingsCache] = useState({
+    upcoming: null,
+    completed: null,
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (selected !== "my-meetings") return;
-    if (meetingsCache[meetingType]) return; // already fetched, skip
+    if (meetingsCache[meetingType]) return;
+
     let cancelled = false;
     setLoading(true);
 
@@ -33,7 +37,10 @@ const Dashboard = ({ context }) => {
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setMeetingsCache((prev) => ({ ...prev, [meetingType]: data.meetings || [] }));
+        setMeetingsCache((prev) => ({
+          ...prev,
+          [meetingType]: data.meetings || [],
+        }));
         setLoading(false);
       })
       .catch(() => {
@@ -63,11 +70,13 @@ const Dashboard = ({ context }) => {
               Completed
             </Button>
           </ButtonRow>
-          <MeetingsList
-            meetings={meetingsCache[meetingType] || []}
-            loading={loading}
-            type={meetingType}
-          />
+          <Flex direction="column" gap="lg">
+            <MeetingsList
+              meetings={meetingsCache[meetingType] || []}
+              loading={loading}
+              type={meetingType}
+            />
+          </Flex>
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
           <Text>My Recordings — coming soon</Text>
@@ -91,18 +100,21 @@ const MeetingsList = ({ meetings, loading, type }) => {
     <Flex direction="row" wrap="wrap" gap="md">
       {meetings.map((m) => (
         <Tile key={m.id}>
-          <Flex direction="column" gap="xs">
-            <Text format={{ fontWeight: "bold" }}>{m.topic}</Text>
-            <Text variant="microcopy">
-              {m.startTime} ({m.timezone})
+          <Flex direction="column" gap="sm">
+            <Text format={{ fontWeight: "bold", fontSize: "large" }}>
+              Meeting Name : {m.topic}
             </Text>
-            <Text variant="microcopy">Duration: {m.duration}</Text>
-            {type === "upcoming" ? (
+            <Text format={{ fontSize: "medium" }}>
+              Duration : {m.duration} hr
+            </Text>
+            <Text format={{ fontSize: "medium" }}>
+              Attend : {m.totalAttended || 0}
+            </Text>
+            <Text format={{ fontSize: "medium" }}>
+              Date & Time : {m.startTime} ({m.timezone})
+            </Text>
+            {type === "upcoming" && (
               <Link href={m.joinURL}>Join Meeting</Link>
-            ) : (
-              <Text variant="microcopy">
-                Attended: {m.totalAttended || 0}
-              </Text>
             )}
           </Flex>
         </Tile>
