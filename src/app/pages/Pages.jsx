@@ -17,7 +17,7 @@ hubspot.extend(({ context }) => <Dashboard context={context} />);
 const Dashboard = ({ context }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
-  const [meetings, setMeetings] = useState([]);
+  const [meetingsCache, setMeetingsCache] = useState({ upcoming: null, completed: null });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
