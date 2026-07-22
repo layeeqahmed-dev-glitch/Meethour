@@ -3029,6 +3029,7 @@ app.get("/api/meethour-meetings", async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${meethourToken}`,
+          "Content-Type": "application/json",
         },
       },
     );
