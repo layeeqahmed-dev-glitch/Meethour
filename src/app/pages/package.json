@@ -1,0 +1,8 @@
+{
+  "name": "meethour-dashboard-page",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0",
+    "@hubspot/ui-extensions": "latest"
+  }
+}

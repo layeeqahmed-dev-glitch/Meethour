@@ -2986,6 +2986,76 @@ app.post("/form-webhook", async (req, res) => {
   }
 });
 
+app.get("/api/meethour-meetings", async (req, res) => {
+  try {
+    console.log("===== MEETHOUR MEETINGS =====");
+
+    await connectDB();
+
+    const { portalId, type } = req.query;
+    console.log("PORTAL ID:", portalId);
+    console.log("TYPE:", type);
+
+    if (!portalId || !type) {
+      return res.status(400).json({
+        success: false,
+        message: "portalId and type are required",
+      });
+    }
+
+    const tokenRecord = await Token.findOne({
+      hubspotPortalId: String(portalId),
+    });
+
+    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
+      return res.status(400).json({
+        success: false,
+        message: "MeetHour token not found",
+      });
+    }
+
+    const meethourToken = tokenRecord.meethourAccessToken;
+
+    const endpoint =
+      type === "completed"
+        ? "https://api.meethour.io/api/v2/meeting/completedmeetings"
+        : "https://api.meethour.io/api/v2/meeting/upcomingmeetings";
+
+    const meetingsRes = await axios.get(endpoint, {
+      headers: {
+        Authorization: `Bearer ${meethourToken}`,
+      },
+    });
+
+    const meetings = (meetingsRes.data.meetings || []).map((m) => ({
+      id: m.id,
+      topic: m.topic,
+      startTime: m.start_time,
+      timezone: m.timezone,
+      duration: m.duration,
+      joinURL: m.joinURL,
+      totalAttended: m.total_attended,
+    }));
+
+    console.log(`FOUND ${meetings.length} ${type.toUpperCase()} MEETINGS`);
+
+    return res.json({
+      success: true,
+      meetings,
+    });
+  } catch (err) {
+    console.log(
+      "MEETHOUR MEETINGS ERROR:",
+      err.response?.data || err.message,
+    );
+
+    return res.status(500).json({
+      success: false,
+      error: err.response?.data || err.message,
+    });
+  }
+});
+
 // CREATE FORM & WORKFLOW FUNCTION
 async function setupMeetHourHubSpot(portalId, accessToken) {
   try {
@@ -3163,6 +3233,8 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
     };
   }
 }
+
+
 
 //localhost running @ 3000
 if (process.env.NODE_ENV !== "production") {

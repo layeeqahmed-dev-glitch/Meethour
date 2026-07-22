@@ -1,0 +1,7 @@
+{
+  "uid": "meethour-dashboard",
+  "type": "page",
+  "config": {
+    "entrypoint": "/app/pages/Pages.jsx"
+  }
+}
