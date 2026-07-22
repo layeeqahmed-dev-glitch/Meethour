@@ -5,13 +5,15 @@ import {
   Tab,
   Text,
   Link,
+  Button,
+  ButtonRow,
   LoadingSpinner,
   hubspot,
 } from "@hubspot/ui-extensions";
 
-hubspot.extend(() => <Dashboard />);
+hubspot.extend(({ context }) => <Dashboard context={context} />);
 
-const Dashboard = () => {
+const Dashboard = ({ context }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
   const [meetings, setMeetings] = useState([]);
@@ -20,31 +22,50 @@ const Dashboard = () => {
   useEffect(() => {
     if (selected !== "my-meetings") return;
 
+    let cancelled = false;
     setLoading(true);
+
     hubspot
       .fetch(
-        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${hubspot.context.portalId}&type=${meetingType}`,
+        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}`,
       )
       .then((res) => res.json())
       .then((data) => {
-        setMeetings(data.meetings || []);
+        if (cancelled) return;
+        setMeetings(data.meetings || data.responseBody?.meetings || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selected, meetingType]);
 
   return (
     <Tile>
       <Tabs selected={selected} onSelectedChange={setSelected}>
         <Tab tabId="my-meetings" title="My Meetings">
-          <Tabs selected={meetingType} onSelectedChange={setMeetingType}>
-            <Tab tabId="upcoming" title="Upcoming">
-              <MeetingsList meetings={meetings} loading={loading} />
-            </Tab>
-            <Tab tabId="completed" title="Completed">
-              <MeetingsList meetings={meetings} loading={loading} />
-            </Tab>
-          </Tabs>
+          <ButtonRow>
+            <Button
+              variant={meetingType === "upcoming" ? "primary" : "secondary"}
+              onClick={() => setMeetingType("upcoming")}
+            >
+              Upcoming
+            </Button>
+            <Button
+              variant={meetingType === "completed" ? "primary" : "secondary"}
+              onClick={() => setMeetingType("completed")}
+            >
+              Completed
+            </Button>
+          </ButtonRow>
+          <Text>
+            DEBUG: loading={String(loading)}, meetings.length={meetings.length}
+          </Text>
+          <MeetingsList meetings={meetings} loading={loading} />
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
           <Text>My Recordings — coming soon</Text>
