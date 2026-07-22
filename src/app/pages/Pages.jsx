@@ -64,7 +64,7 @@ const Dashboard = ({ context }) => {
             </Button>
           </ButtonRow>
           <Text>
-            DEBUG: loading={String(loading)}, meetings.length={meetings.length}
+            DEBUG: loading={String(loading)}, meetings.length={meetings.length}, type={meetingType}
           </Text>
           <MeetingsList meetings={meetings} loading={loading} />
         </Tab>
