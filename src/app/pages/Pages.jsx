@@ -5,9 +5,9 @@ import {
   Tab,
   Text,
   Link,
-  Flex,
   Button,
   ButtonRow,
+  Flex,
   LoadingSpinner,
   hubspot,
 } from "@hubspot/ui-extensions";
@@ -28,12 +28,12 @@ const Dashboard = ({ context }) => {
 
     hubspot
       .fetch(
-        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}`,
+        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`,
       )
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setMeetings(data.meetings || data.responseBody?.meetings || []);
+        setMeetings(data.meetings || []);
         setLoading(false);
       })
       .catch(() => {
@@ -63,10 +63,11 @@ const Dashboard = ({ context }) => {
               Completed
             </Button>
           </ButtonRow>
-          <Text>
-            DEBUG: loading={String(loading)}, meetings.length={meetings.length}, type={meetingType}
-          </Text>
-          <MeetingsList meetings={meetings} loading={loading} />
+          <MeetingsList
+            meetings={meetings}
+            loading={loading}
+            type={meetingType}
+          />
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
           <Text>My Recordings — coming soon</Text>
@@ -82,22 +83,31 @@ const Dashboard = ({ context }) => {
   );
 };
 
-const MeetingsList = ({ meetings, loading }) => {
+const MeetingsList = ({ meetings, loading, type }) => {
   if (loading) return <LoadingSpinner label="Loading meetings..." />;
   if (!meetings.length) return <Text>No meetings found.</Text>;
 
   return (
-    <>
+    <Flex direction="row" wrap="wrap" gap="md">
       {meetings.map((m) => (
-        <Flex key={m.id} direction="column" gap="xs">
-          <Text variant="microcopy">{m.topic}</Text>
-          <Text>
-            {m.startTime} ({m.timezone})
-          </Text>
-          <Link href={m.joinURL}>Join Meeting</Link>
-        </Flex>
+        <Tile key={m.id}>
+          <Flex direction="column" gap="xs">
+            <Text format={{ fontWeight: "bold" }}>{m.topic}</Text>
+            <Text variant="microcopy">
+              {m.startTime} ({m.timezone})
+            </Text>
+            <Text variant="microcopy">Duration: {m.duration}</Text>
+            {type === "upcoming" ? (
+              <Link href={m.joinURL}>Join Meeting</Link>
+            ) : (
+              <Text variant="microcopy">
+                Attended: {m.totalAttended || 0}
+              </Text>
+            )}
+          </Flex>
+        </Tile>
       ))}
-    </>
+    </Flex>
   );
 };
 
