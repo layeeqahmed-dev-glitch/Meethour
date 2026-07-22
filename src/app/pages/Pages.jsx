@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Tile,
   Tabs,
+  Button,
   Tab,
   Text,
   Link,
@@ -94,27 +95,29 @@ const Dashboard = ({ context }) => {
 };
 
 const MeetingCard = ({ m, type }) => (
-  <Box flex={1}>
-    <Tile>
-      <Flex direction="column" gap="sm">
-        <Text format={{ fontWeight: "bold" }}>Meeting Name : {m.topic}</Text>
-        <Text format={{ fontWeight: "bold" }}>
-          Duration : {m.duration} hr
-        </Text>
-        <Text format={{ fontWeight: "bold" }}>
-          Attend : {m.totalAttended || 0}
-        </Text>
-        <Text format={{ fontWeight: "bold" }}>
-          Date & Time : {m.startTime} ({m.timezone})
-        </Text>
-        {type === "upcoming" && (
-          <Text format={{ fontWeight: "bold" }}>
-            <Link href={m.joinURL}>Join Meeting</Link>
-          </Text>
-        )}
+  <Tile>
+    <Flex direction="column" gap="sm">
+      <Flex direction="row" gap="xs">
+        <Text format={{ fontWeight: "bold" }}>Meeting Name :</Text>
+        <Text>{m.topic}</Text>
       </Flex>
-    </Tile>
-  </Box>
+      <Flex direction="row" gap="xs">
+        <Text format={{ fontWeight: "bold" }}>Duration :</Text>
+        <Text>{m.duration} hr</Text>
+      </Flex>
+      <Flex direction="row" gap="xs">
+        <Text format={{ fontWeight: "bold" }}>Attend :</Text>
+        <Text>{m.totalAttended || 0}</Text>
+      </Flex>
+      <Flex direction="row" gap="xs">
+        <Text format={{ fontWeight: "bold" }}>Date & Time :</Text>
+        <Text>
+          {m.startTime} ({m.timezone})
+        </Text>
+      </Flex>
+      {type === "upcoming" && (  <Button href={m.joinURL} external={true} variant="secondary" size="sm">  Join Meeting </Button>  )}
+    </Flex>
+  </Tile>
 );
 
 const MeetingsList = ({ meetings, loading, type }) => {
