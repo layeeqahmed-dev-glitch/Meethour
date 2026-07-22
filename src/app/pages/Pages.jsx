@@ -8,6 +8,7 @@ import {
   Button,
   ButtonRow,
   Flex,
+  Box,
   LoadingSpinner,
   hubspot,
 } from "@hubspot/ui-extensions";
@@ -56,27 +57,27 @@ const Dashboard = ({ context }) => {
     <Tile>
       <Tabs selected={selected} onSelectedChange={setSelected}>
         <Tab tabId="my-meetings" title="My Meetings">
-          <ButtonRow>
-            <Button
-              variant={meetingType === "upcoming" ? "primary" : "secondary"}
-              onClick={() => setMeetingType("upcoming")}
-            >
-              Upcoming
-            </Button>
-            <Button
-              variant={meetingType === "completed" ? "primary" : "secondary"}
-              onClick={() => setMeetingType("completed")}
-            >
-              Completed
-            </Button>
-          </ButtonRow>
-          <Flex direction="column" gap="lg">
-            <MeetingsList
-              meetings={meetingsCache[meetingType] || []}
-              loading={loading}
-              type={meetingType}
-            />
-          </Flex>
+          <Box marginBottom="lg">
+            <ButtonRow>
+              <Button
+                variant={meetingType === "upcoming" ? "primary" : "secondary"}
+                onClick={() => setMeetingType("upcoming")}
+              >
+                Upcoming
+              </Button>
+              <Button
+                variant={meetingType === "completed" ? "primary" : "secondary"}
+                onClick={() => setMeetingType("completed")}
+              >
+                Completed
+              </Button>
+            </ButtonRow>
+          </Box>
+          <MeetingsList
+            meetings={meetingsCache[meetingType] || []}
+            loading={loading}
+            type={meetingType}
+          />
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
           <Text>My Recordings — coming soon</Text>
@@ -92,32 +93,47 @@ const Dashboard = ({ context }) => {
   );
 };
 
+const MeetingCard = ({ m, type }) => (
+  <Box flex={1}>
+    <Tile>
+      <Flex direction="column" gap="sm">
+        <Text format={{ fontWeight: "bold" }}>Meeting Name : {m.topic}</Text>
+        <Text format={{ fontWeight: "bold" }}>
+          Duration : {m.duration} hr
+        </Text>
+        <Text format={{ fontWeight: "bold" }}>
+          Attend : {m.totalAttended || 0}
+        </Text>
+        <Text format={{ fontWeight: "bold" }}>
+          Date & Time : {m.startTime} ({m.timezone})
+        </Text>
+        {type === "upcoming" && (
+          <Text format={{ fontWeight: "bold" }}>
+            <Link href={m.joinURL}>Join Meeting</Link>
+          </Text>
+        )}
+      </Flex>
+    </Tile>
+  </Box>
+);
+
 const MeetingsList = ({ meetings, loading, type }) => {
   if (loading) return <LoadingSpinner label="Loading meetings..." />;
   if (!meetings.length) return <Text>No meetings found.</Text>;
 
+  const rows = [];
+  for (let i = 0; i < meetings.length; i += 2) {
+    rows.push(meetings.slice(i, i + 2));
+  }
+
   return (
-    <Flex direction="row" wrap="wrap" gap="md">
-      {meetings.map((m) => (
-        <Tile key={m.id}>
-          <Flex direction="column" gap="sm">
-            <Text format={{ fontWeight: "bold", fontSize: "large" }}>
-              Meeting Name : {m.topic}
-            </Text>
-            <Text format={{ fontSize: "medium" }}>
-              Duration : {m.duration} hr
-            </Text>
-            <Text format={{ fontSize: "medium" }}>
-              Attend : {m.totalAttended || 0}
-            </Text>
-            <Text format={{ fontSize: "medium" }}>
-              Date & Time : {m.startTime} ({m.timezone})
-            </Text>
-            {type === "upcoming" && (
-              <Link href={m.joinURL}>Join Meeting</Link>
-            )}
-          </Flex>
-        </Tile>
+    <Flex direction="column" gap="md">
+      {rows.map((row, idx) => (
+        <Flex key={idx} direction="row" gap="md">
+          {row.map((m) => (
+            <MeetingCard key={m.id} m={m} type={type} />
+          ))}
+        </Flex>
       ))}
     </Flex>
   );
