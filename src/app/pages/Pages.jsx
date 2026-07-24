@@ -115,11 +115,9 @@ const MeetingCard = ({ m, type }) => (
       {type === "upcoming" && (
         <Button
           href={{ url: m.joinURL, external: true }}
-          variant="primary"
-          size="md"
-          type="button"
+          variant="secondary"
         >
-          Join Meeting
+          Join Button
         </Button>
       )}
     </Flex>
