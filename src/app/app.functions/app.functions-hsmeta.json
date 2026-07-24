@@ -1,0 +1,18 @@
+{
+  "uid": "meethour_functions",
+  "type": "serverless-functions",
+  "config": {
+    "runtime": "nodejs18.x",
+    "functions": [
+      {
+        "function": "getMeethourMeetings",
+        "file": "getMeethourMeetings.js",
+        "endpoint": {
+          "method": ["GET"],
+          "path": "getMeethourMeetings"
+        }
+      }
+    ],
+    "environment": {}
+  }
+}
