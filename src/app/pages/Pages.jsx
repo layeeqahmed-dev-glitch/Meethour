@@ -196,7 +196,7 @@ const RecordingCard = ({ r, context }) => (
       </Flex>
       <Button
         href={{
-          url: `https://meethourhubs.vercel.app/api/meethour-recording-stream?portalId=${context.portal.id}&path=${encodeURIComponent(r.path)}`,
+          url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
           external: true,
         }}
         variant="secondary"
