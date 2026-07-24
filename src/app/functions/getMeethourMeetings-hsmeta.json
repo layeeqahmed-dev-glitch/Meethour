@@ -1,0 +1,8 @@
+{
+  "uid": "get_meethour_meetings",
+  "type": "app-function",
+  "config": {
+    "entrypoint": "/app/functions/getMeethourMeetings.js",
+    "secretKeys": ["MONGO_URI"]
+  }
+}
