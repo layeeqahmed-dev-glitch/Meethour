@@ -31,9 +31,10 @@ const Dashboard = ({ context }) => {
     setLoading(true);
 
     hubspot
-      .serverless("getMeethourMeetings", {
-        parameters: { portalId: context.portal.id, type: meetingType },
-      })
+      .fetch(
+        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`,
+      )
+      .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
         setMeetingsCache((prev) => ({
