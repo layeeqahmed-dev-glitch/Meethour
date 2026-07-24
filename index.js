@@ -3291,6 +3291,31 @@ app.get("/api/meethour-recordings", async (req, res) => {
   }
 });
 
+//streaming recording
+
+app.get("/api/meethour-recording-stream", async (req, res) => {
+  try {
+    await connectDB();
+    const { portalId, path } = req.query;
+
+    const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
+    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
+      return res.status(400).send("Token not found");
+    }
+
+    const videoRes = await axios.get(path, {
+      headers: { Authorization: `Bearer ${tokenRecord.meethourAccessToken}` },
+      responseType: "stream",
+    });
+
+    res.setHeader("Content-Type", "video/mp4");
+    videoRes.data.pipe(res);
+  } catch (err) {
+    console.log("STREAM ERROR:", err.response?.data || err.message);
+    res.status(500).send("Stream failed");
+  }
+});
+
 
 //localhost running @ 3000
 if (process.env.NODE_ENV !== "production") {
