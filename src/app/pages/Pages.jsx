@@ -56,7 +56,7 @@ const Dashboard = ({ context }) => {
     <Tile>
       <Tabs selected={selected} onSelectedChange={setSelected}>
         <Tab tabId="my-meetings" title="My Meetings">
-          <Box marginBottom="lg">
+          <Flex direction="column" gap="lg">
             <ButtonRow>
               <Button
                 variant={meetingType === "upcoming" ? "primary" : "secondary"}
@@ -71,12 +71,12 @@ const Dashboard = ({ context }) => {
                 Completed Meetings
               </Button>
             </ButtonRow>
-          </Box>
-          <MeetingsList
-            meetings={meetingsCache[meetingType] || []}
-            loading={loading}
-            type={meetingType}
-          />
+            <MeetingsList
+              meetings={meetingsCache[meetingType]}
+              loading={loading}
+              type={meetingType}
+            />
+          </Flex>
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
           <Text>My Recordings — coming soon</Text>
@@ -128,7 +128,7 @@ const MeetingCard = ({ m, type }) => (
 
 const MeetingsList = ({ meetings, loading, type }) => {
   if (loading) return <LoadingSpinner label="Loading meetings..." />;
-  if (!meetings.length) return <Text>No meetings found.</Text>;
+  if (loading || meetings === null) return <LoadingSpinner label="Loading meetings..." />;
 
   return (
     <Flex direction="column" gap="lg">
