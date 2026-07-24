@@ -115,7 +115,7 @@ const MeetingCard = ({ m, type }) => (
       {type === "upcoming" && (
         <Button
           href={{ url: m.joinURL, external: true }}
-          variant="secondary"
+          variant="primary"
           size="md"
           type="button"
         >
