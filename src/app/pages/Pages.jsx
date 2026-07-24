@@ -91,23 +91,22 @@ const Dashboard = ({ context }) => {
     </Tile>
   );
 };
-
 const MeetingCard = ({ m, type }) => (
   <Tile>
     <Flex direction="column" gap="sm">
-      <Flex direction="row" gap="xs">
+      <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Meeting Name :</Text>
         <Text>{m.topic}</Text>
       </Flex>
-      <Flex direction="row" gap="xs">
+      <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Duration :</Text>
         <Text>{m.duration} hr</Text>
       </Flex>
-      <Flex direction="row" gap="xs">
+      <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Attend :</Text>
         <Text>{m.totalAttended || 0}</Text>
       </Flex>
-      <Flex direction="row" gap="xs">
+      <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Date & Time :</Text>
         <Text>
           {m.startTime} ({m.timezone})
@@ -115,10 +114,7 @@ const MeetingCard = ({ m, type }) => (
       </Flex>
       {type === "upcoming" && (
         <Button
-          href={{
-            url: m.joinURL,
-            external: true,
-          }}
+          href={{ url: m.joinURL, external: true }}
           variant="secondary"
           size="md"
           type="button"
@@ -134,19 +130,10 @@ const MeetingsList = ({ meetings, loading, type }) => {
   if (loading) return <LoadingSpinner label="Loading meetings..." />;
   if (!meetings.length) return <Text>No meetings found.</Text>;
 
-  const rows = [];
-  for (let i = 0; i < meetings.length; i += 2) {
-    rows.push(meetings.slice(i, i + 2));
-  }
-
   return (
-    <Flex direction="column" gap="md">
-      {rows.map((row, idx) => (
-        <Flex key={idx} direction="row" gap="md">
-          {row.map((m) => (
-            <MeetingCard key={m.id} m={m} type={type} />
-          ))}
-        </Flex>
+    <Flex direction="column" gap="lg">
+      {meetings.map((m) => (
+        <MeetingCard key={m.id} m={m} type={type} />
       ))}
     </Flex>
   );
