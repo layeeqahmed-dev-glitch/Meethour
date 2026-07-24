@@ -3241,6 +3241,57 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
   }
 }
 
+
+//recordingd in UI
+app.get("/api/meethour-recordings", async (req, res) => {
+  try {
+    await connectDB();
+    const { portalId } = req.query;
+
+    if (!portalId) {
+      return res.status(400).json({ success: false, message: "portalId required" });
+    }
+
+    const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
+
+    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
+      return res.status(400).json({ success: false, message: "MeetHour token not found" });
+    }
+
+    const recRes = await axios.post(
+      "https://api.meethour.io/api/v1.2/customer/videorecordinglist",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const data = recRes.data;
+    const all = [
+      ...(data.dropbox_recordings || []),
+      ...(data.onedrive_recordings || []),
+      ...(data.meethour_recordings || []),
+      ...(data.custom_recordings || []),
+    ].map((r) => ({
+      id: r.recording_id,
+      topic: r.topic,
+      date: r.recording_date,
+      duration: r.duration,
+      type: r.recording_type,
+      path: r.recording_path,
+    }));
+
+    return res.json({ success: true, recordings: all });
+  } catch (err) {
+    console.log("RECORDINGS ERROR:", err.response?.data || err.message);
+    return res.status(500).json({ success: false, error: err.response?.data || err.message });
+  }
+});
+
+
 //localhost running @ 3000
 if (process.env.NODE_ENV !== "production") {
   app.listen(3000, () => console.log("Server running on port 3000"));

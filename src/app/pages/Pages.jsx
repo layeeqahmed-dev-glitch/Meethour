@@ -7,7 +7,6 @@ import {
   Text,
   ButtonRow,
   Flex,
-  Box,
   LoadingSpinner,
   hubspot,
 } from "@hubspot/ui-extensions";
@@ -22,6 +21,8 @@ const Dashboard = ({ context }) => {
     completed: null,
   });
   const [loading, setLoading] = useState(false);
+  const [recordings, setRecordings] = useState(null);
+  const [recordingsLoading, setRecordingsLoading] = useState(false);
 
   useEffect(() => {
     if (selected !== "my-meetings") return;
@@ -52,6 +53,32 @@ const Dashboard = ({ context }) => {
     };
   }, [selected, meetingType]);
 
+  useEffect(() => {
+    if (selected !== "my-recordings") return;
+    if (recordings !== null) return;
+
+    let cancelled = false;
+    setRecordingsLoading(true);
+
+    hubspot
+      .fetch(
+        `https://meethourhubs.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&_t=${Date.now()}`,
+      )
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setRecordings(data.recordings || []);
+        setRecordingsLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setRecordingsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
+
   return (
     <Tile>
       <Tabs selected={selected} onSelectedChange={setSelected}>
@@ -79,7 +106,11 @@ const Dashboard = ({ context }) => {
           </Flex>
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
-          <Text>My Recordings — coming soon</Text>
+          <RecordingsList
+            recordings={recordings}
+            loading={recordingsLoading}
+            context={context}
+          />
         </Tab>
         <Tab tabId="all-meetings" title="Show All Meetings">
           <Text>Show All Meetings — coming soon</Text>
@@ -91,6 +122,7 @@ const Dashboard = ({ context }) => {
     </Tile>
   );
 };
+
 const MeetingCard = ({ m, type }) => (
   <Tile>
     <Flex direction="column" gap="sm">
@@ -114,8 +146,13 @@ const MeetingCard = ({ m, type }) => (
       </Flex>
       {type === "upcoming" && (
         <Button
-          href={{ url: m.joinURL, external: true }}
-          variant="primary"
+          href={{
+            url: m.joinURL,
+            external: true,
+          }}
+          variant="secondary"
+          size="md"
+          type="button"
         >
           Join Meeting
         </Button>
@@ -125,13 +162,62 @@ const MeetingCard = ({ m, type }) => (
 );
 
 const MeetingsList = ({ meetings, loading, type }) => {
-  if (loading) return <LoadingSpinner label="Loading meetings..." />;
-  if (loading || meetings === null) return <LoadingSpinner label="Loading meetings..." />;
+  if (loading || meetings === null)
+    return <LoadingSpinner label="Loading meetings..." />;
+  if (!meetings.length) return <Text>No meetings found.</Text>;
 
   return (
     <Flex direction="column" gap="lg">
       {meetings.map((m) => (
         <MeetingCard key={m.id} m={m} type={type} />
+      ))}
+    </Flex>
+  );
+};
+
+const RecordingCard = ({ r, context }) => (
+  <Tile>
+    <Flex direction="column" gap="sm">
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Recording :</Text>
+        <Text>{r.topic}</Text>
+      </Flex>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Type :</Text>
+        <Text>{r.type}</Text>
+      </Flex>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Duration :</Text>
+        <Text>{r.duration}</Text>
+      </Flex>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Date :</Text>
+        <Text>{r.date}</Text>
+      </Flex>
+      <Button
+        href={{
+          url: `https://meethourhubs.vercel.app/api/meethour-recording-stream?portalId=${context.portal.id}&path=${encodeURIComponent(r.path)}`,
+          external: true,
+        }}
+        variant="secondary"
+        size="md"
+        type="button"
+      >
+        Play Recording
+      </Button>
+    </Flex>
+  </Tile>
+);
+
+const RecordingsList = ({ recordings, loading, context }) => {
+  if (loading || recordings === null)
+    return <LoadingSpinner label="Loading recordings..." />;
+  if (!recordings.length) return <Text>No recordings found.</Text>;
+
+  return (
+    <Flex direction="column" gap="lg">
+      {recordings.map((r) => (
+        <RecordingCard key={r.id + r.date} r={r} context={context} />
       ))}
     </Flex>
   );
