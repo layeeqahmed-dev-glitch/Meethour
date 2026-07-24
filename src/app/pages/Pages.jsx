@@ -31,10 +31,9 @@ const Dashboard = ({ context }) => {
     setLoading(true);
 
     hubspot
-      .fetch(
-        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`,
-      )
-      .then((res) => res.json())
+      .serverless("getMeethourMeetings", {
+        parameters: { portalId: context.portal.id, type: meetingType },
+      })
       .then((data) => {
         if (cancelled) return;
         setMeetingsCache((prev) => ({
@@ -62,13 +61,13 @@ const Dashboard = ({ context }) => {
                 variant={meetingType === "upcoming" ? "primary" : "secondary"}
                 onClick={() => setMeetingType("upcoming")}
               >
-                Upcoming
+                Upcoming Meetings
               </Button>
               <Button
                 variant={meetingType === "completed" ? "primary" : "secondary"}
                 onClick={() => setMeetingType("completed")}
               >
-                Completed
+                Completed Meetings
               </Button>
             </ButtonRow>
           </Box>
@@ -129,6 +128,7 @@ const MeetingCard = ({ m, type }) => (
     </Flex>
   </Tile>
 );
+
 const MeetingsList = ({ meetings, loading, type }) => {
   if (loading) return <LoadingSpinner label="Loading meetings..." />;
   if (!meetings.length) return <Text>No meetings found.</Text>;
