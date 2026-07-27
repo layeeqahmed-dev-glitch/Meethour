@@ -3288,6 +3288,14 @@ app.get("/api/meethour-recordings", async (req, res) => {
       path: r.recording_path,
     }));
 
+    console.log(
+      "Topic:",
+      r.topic,
+      "| recording_type:",
+      r.recording_type
+    );
+
+
     return res.json({ success: true, recordings: all });
   } catch (err) {
     console.log("RECORDINGS ERROR:", err.response?.data || err.message);
