@@ -3272,6 +3272,8 @@ app.get("/api/meethour-recordings", async (req, res) => {
     );
 
     const data = recRes.data;
+    console.log("===== RECORDINGS DATA =====");
+    console.log(JSON.stringify(data, null, 2));
     const all = [
       ...(data.dropbox_recordings || []),
       ...(data.onedrive_recordings || []),
