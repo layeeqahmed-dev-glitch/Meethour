@@ -34,26 +34,29 @@ const Dashboard = ({ context }) => {
 
     hubspot
       .fetch(
-        hubspot.fetch(
-  `https://meethourhubs.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&type=${recordingType}&_t=${Date.now()}`),
+        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`,
       )
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setRecordings(data.recordings || []);
-        setRecordingsLoading(false);
+        setMeetingsCache((prev) => ({
+          ...prev,
+          [meetingType]: data.meetings || [],
+        }));
+        setLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setRecordingsLoading(false);
+        if (!cancelled) setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [selected, meetingType]);
 
   useEffect(() => {
     if (selected !== "my-recordings") return;
+    if (recordings !== null) return;
 
     let cancelled = false;
     setRecordingsLoading(true);
@@ -75,7 +78,7 @@ const Dashboard = ({ context }) => {
     return () => {
       cancelled = true;
     };
-  }, [selected, recordingType]);
+  }, [selected]);
 
   return (
     <Tile>
@@ -104,41 +107,43 @@ const Dashboard = ({ context }) => {
           </Flex>
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
-          <Flex direction="column" gap="lg">
-            <ButtonRow>
-              <Button
-                variant={recordingType === "meethour" ? "primary" : "secondary"}
-                onClick={() => setRecordingType("meethour")}
-              >
-                MeetHour
-              </Button>
-              <Button
-                variant={recordingType === "dropbox" ? "primary" : "secondary"}
-                onClick={() => setRecordingType("dropbox")}
-              >
-                Dropbox
-              </Button>
-              <Button
-                variant={recordingType === "onedrive" ? "primary" : "secondary"}
-                onClick={() => setRecordingType("onedrive")}
-              >
-                OneDrive
-              </Button>
-              <Button
-                variant={recordingType === "customs3" ? "primary" : "secondary"}
-                onClick={() => setRecordingType("customs3")}
-              >
-                CustomS3
-              </Button>
-            </ButtonRow>
-            <RecordingsList
-              recordings={(recordings || []).filter(
-                (r) => r.type?.toLowerCase() === recordingType.replace("customs3", "custom"),
-              )}
-              loading={recordingsLoading}
-            />
-          </Flex>
-        </Tab>
+  <Flex direction="column" gap="lg">
+    <ButtonRow>
+      <Button
+        variant={recordingType === "meethour" ? "primary" : "secondary"}
+        onClick={() => setRecordingType("meethour")}
+      >
+        MeetHour
+      </Button>
+      <Button
+        variant={recordingType === "dropbox" ? "primary" : "secondary"}
+        onClick={() => setRecordingType("dropbox")}
+      >
+        Dropbox
+      </Button>
+      <Button
+        variant={recordingType === "onedrive" ? "primary" : "secondary"}
+        onClick={() => setRecordingType("onedrive")}
+      >
+        OneDrive
+      </Button>
+      <Button
+        variant={recordingType === "customs3" ? "primary" : "secondary"}
+        onClick={() => setRecordingType("customs3")}
+      >
+        CustomS3
+      </Button>
+    </ButtonRow>
+    <RecordingsList
+      recordings={(recordings || []).filter(
+        (r) =>
+          r.type?.toLowerCase() ===
+          recordingType.replace("customs3", "custom"),
+      )}
+      loading={recordingsLoading}
+    />
+  </Flex>
+</Tab>
         <Tab tabId="all-meetings" title="Show All Meetings">
           <Text>Show All Meetings — coming soon</Text>
         </Tab>
@@ -149,6 +154,7 @@ const Dashboard = ({ context }) => {
     </Tile>
   );
 };
+
 const MeetingCard = ({ m, type }) => (
   <Tile>
     <Flex direction="column" gap="sm">
@@ -158,11 +164,11 @@ const MeetingCard = ({ m, type }) => (
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Duration :</Text>
-        <Text>{m.duration} Hour</Text>
+        <Text>{m.duration} hr</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Invitees :</Text>
-        <Text>{m.invitees}</Text>
+        <Text format={{ fontWeight: "bold" }}>Attend :</Text>
+        <Text>{m.totalAttended || 0}</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Date & Time :</Text>
@@ -171,24 +177,17 @@ const MeetingCard = ({ m, type }) => (
         </Text>
       </Flex>
       {type === "upcoming" && (
-        <>
-          <Flex direction="row" gap="xs" wrap="nowrap">
-            <Text format={{ fontWeight: "bold" }}>Agenda :</Text>
-            <Text>{m.agenda || "-"}</Text>
-          </Flex>
-          <Flex direction="row" gap="xs" wrap="nowrap">
-            <Text format={{ fontWeight: "bold" }}>Passcode :</Text>
-            <Text>{m.passcode || "-"}</Text>
-          </Flex>
-          <Button
-            href={{ url: m.joinURL, external: true }}
-            variant="secondary"
-            size="md"
-            type="button"
-          >
-            Join Meeting
-          </Button>
-        </>
+        <Button
+          href={{
+            url: m.joinURL,
+            external: true,
+          }}
+          variant="secondary"
+          size="md"
+          type="button"
+        >
+          Join Meeting
+        </Button>
       )}
     </Flex>
   </Tile>
@@ -207,6 +206,7 @@ const MeetingsList = ({ meetings, loading, type }) => {
     </Flex>
   );
 };
+
 const RecordingCard = ({ r, context }) => (
   <Tile>
     <Flex direction="column" gap="sm">
