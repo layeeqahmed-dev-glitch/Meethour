@@ -11,9 +11,11 @@ import {
   hubspot,
 } from "@hubspot/ui-extensions";
 
-hubspot.extend(({ context }) => <Dashboard context={context} />);
+hubspot.extend(({ context, actions }) => (
+  <Dashboard context={context} actions={actions} />
+));
 
-const Dashboard = ({ context }) => {
+const Dashboard = ({ context, actions }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
   const [meetingsCache, setMeetingsCache] = useState({
@@ -110,6 +112,7 @@ const Dashboard = ({ context }) => {
             recordings={recordings}
             loading={recordingsLoading}
             context={context}
+            openIframe={actions.openIframeModal}
           />
         </Tab>
         <Tab tabId="all-meetings" title="Show All Meetings">
@@ -175,41 +178,48 @@ const MeetingsList = ({ meetings, loading, type }) => {
   );
 };
 
-const RecordingCard = ({ r, context }) => (
-  <Tile>
-    <Flex direction="column" gap="sm">
-      <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Recording :</Text>
-        <Text>{r.topic}</Text>
-      </Flex>
-      <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Type :</Text>
-        <Text>{r.type}</Text>
-      </Flex>
-      <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Duration :</Text>
-        <Text>{r.duration}</Text>
-      </Flex>
-      <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Date :</Text>
-        <Text>{r.date}</Text>
-      </Flex>
-      <Button
-        href={{
-          url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
-          external: true,
-        }}
-        variant="secondary"
-        size="md"
-        type="button"
-      >
-        Play Recording
-      </Button>
-    </Flex>
-  </Tile>
-);
+const RecordingCard = ({ r, openIframe }) => {
+  const handlePlay = () => {
+    openIframe(
+      {
+        uri: `https://portal.meethour.io/customer/view_recording/${r.id}`,
+        height: 600,
+        width: 900,
+        title: r.topic,
+        flush: true,
+      },
+      () => { },
+    );
+  };
 
-const RecordingsList = ({ recordings, loading, context }) => {
+  return (
+    <Tile>
+      <Flex direction="column" gap="sm">
+        <Flex direction="row" gap="xs" wrap="nowrap">
+          <Text format={{ fontWeight: "bold" }}>Recording :</Text>
+          <Text>{r.topic}</Text>
+        </Flex>
+        <Flex direction="row" gap="xs" wrap="nowrap">
+          <Text format={{ fontWeight: "bold" }}>Type :</Text>
+          <Text>{r.type}</Text>
+        </Flex>
+        <Flex direction="row" gap="xs" wrap="nowrap">
+          <Text format={{ fontWeight: "bold" }}>Duration :</Text>
+          <Text>{r.duration}</Text>
+        </Flex>
+        <Flex direction="row" gap="xs" wrap="nowrap">
+          <Text format={{ fontWeight: "bold" }}>Date :</Text>
+          <Text>{r.date}</Text>
+        </Flex>
+        <Button variant="secondary" size="md" type="button" onClick={handlePlay}>
+          Play Recording
+        </Button>
+      </Flex>
+    </Tile>
+  );
+};
+
+const RecordingsList = ({ recordings, loading, openIframe }) => {
   if (loading || recordings === null)
     return <LoadingSpinner label="Loading recordings..." />;
   if (!recordings.length) return <Text>No recordings found.</Text>;
@@ -217,7 +227,7 @@ const RecordingsList = ({ recordings, loading, context }) => {
   return (
     <Flex direction="column" gap="lg">
       {recordings.map((r) => (
-        <RecordingCard key={r.id + r.date} r={r} context={context} />
+        <RecordingCard key={r.id + r.date} r={r} openIframe={openIframe} />
       ))}
     </Flex>
   );
