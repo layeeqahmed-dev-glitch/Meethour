@@ -3041,6 +3041,9 @@ app.get("/api/meethour-meetings", async (req, res) => {
       duration: m.duration,
       joinURL: m.joinURL,
       totalAttended: m.total_attended,
+      invitees: m.no_of_invitees,
+      agenda: m.agenda,
+      passcode: m.passcode
     }));
 
     console.log(`FOUND ${meetings.length} ${type.toUpperCase()} MEETINGS`);
@@ -3280,7 +3283,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
       topic: r.topic,
       date: r.recording_date,
       duration: r.duration,
-      type: r.recording_type,
+      type: r.recording_type === "Custom" ? "CustomS3" : r.recording_type,
       path: r.recording_path,
     }));
 

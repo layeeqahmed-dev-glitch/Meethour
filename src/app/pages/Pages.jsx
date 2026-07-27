@@ -122,7 +122,6 @@ const Dashboard = ({ context }) => {
     </Tile>
   );
 };
-
 const MeetingCard = ({ m, type }) => (
   <Tile>
     <Flex direction="column" gap="sm">
@@ -135,8 +134,8 @@ const MeetingCard = ({ m, type }) => (
         <Text>{m.duration} hr</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Attend :</Text>
-        <Text>{m.totalAttended || 0}</Text>
+        <Text format={{ fontWeight: "bold" }}>Invitees :</Text>
+        <Text>{m.invitees}</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Date & Time :</Text>
@@ -145,17 +144,24 @@ const MeetingCard = ({ m, type }) => (
         </Text>
       </Flex>
       {type === "upcoming" && (
-        <Button
-          href={{
-            url: m.joinURL,
-            external: true,
-          }}
-          variant="secondary"
-          size="md"
-          type="button"
-        >
-          Join Meeting
-        </Button>
+        <>
+          <Flex direction="row" gap="xs" wrap="nowrap">
+            <Text format={{ fontWeight: "bold" }}>Agenda :</Text>
+            <Text>{m.agenda || "-"}</Text>
+          </Flex>
+          <Flex direction="row" gap="xs" wrap="nowrap">
+            <Text format={{ fontWeight: "bold" }}>Passcode :</Text>
+            <Text>{m.passcode || "-"}</Text>
+          </Flex>
+          <Button
+            href={{ url: m.joinURL, external: true }}
+            variant="secondary"
+            size="md"
+            type="button"
+          >
+            Join Meeting
+          </Button>
+        </>
       )}
     </Flex>
   </Tile>
@@ -174,7 +180,6 @@ const MeetingsList = ({ meetings, loading, type }) => {
     </Flex>
   );
 };
-
 const RecordingCard = ({ r, context }) => (
   <Tile>
     <Flex direction="column" gap="sm">
