@@ -34,7 +34,8 @@ const Dashboard = ({ context }) => {
 
     hubspot
       .fetch(
-        `https://meethourhubs.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&_t=${Date.now()}`,
+        hubspot.fetch(
+  `https://meethourhubs.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&type=${recordingType}&_t=${Date.now()}`),
       )
       .then((res) => res.json())
       .then((data) => {
@@ -53,7 +54,6 @@ const Dashboard = ({ context }) => {
 
   useEffect(() => {
     if (selected !== "my-recordings") return;
-    if (recordings !== null) return;
 
     let cancelled = false;
     setRecordingsLoading(true);
@@ -75,7 +75,7 @@ const Dashboard = ({ context }) => {
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [selected, recordingType]);
 
   return (
     <Tile>

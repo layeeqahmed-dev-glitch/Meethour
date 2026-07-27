@@ -3248,45 +3248,68 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
 app.get("/api/meethour-recordings", async (req, res) => {
   try {
     await connectDB();
-    const { portalId } = req.query;
+
+    const { portalId, type = "meethour" } = req.query;
 
     if (!portalId) {
-      return res.status(400).json({ success: false, message: "portalId required" });
+      return res.status(400).json({
+        success: false,
+        message: "portalId required",
+      });
     }
 
-    const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
+    const tokenRecord = await Token.findOne({
+      hubspotPortalId: String(portalId),
+    });
 
     if (!tokenRecord || !tokenRecord.meethourAccessToken) {
-      return res.status(400).json({ success: false, message: "MeetHour token not found" });
+      return res.status(400).json({
+        success: false,
+        message: "MeetHour token not found",
+      });
     }
+
+    const filterMap = {
+      meethour: "MeetHour",
+      dropbox: "Dropbox",
+      onedrive: "OneDrive",
+      customs3: "Custom",
+    };
+
+    const filterBy = filterMap[type] || "MeetHour";
+
+    console.log("Fetching recordings:", filterBy);
 
     const recRes = await axios.post(
       "https://api.meethour.io/api/v1.2/customer/videorecordinglist",
-      {},
+      {
+        filter_by: filterBy,
+        limit: 10,
+        page: 1,
+      },
       {
         headers: {
           Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
           "Content-Type": "application/json",
         },
-      },
+      }
     );
 
     const data = recRes.data;
-    console.log("===== RECORDINGS DATA =====");
-    console.log("Dropbox:", data.dropbox_recordings?.length);
-    console.log("MeetHour:", data.meethour_recordings?.length);
-    console.log("OneDrive:", data.onedrive_recordings?.length);
-    console.log("Custom:", data.custom_recordings?.length);
-    console.log(JSON.stringify(data, null, 2));
 
-    
+    console.log("===== RECORDINGS DATA =====");
+    console.log("Filter:", filterBy);
+    console.log("Dropbox:", data.dropbox_recordings?.length || 0);
+    console.log("MeetHour:", data.meethour_recordings?.length || 0);
+    console.log("OneDrive:", data.onedrive_recordings?.length || 0);
+    console.log("Custom:", data.custom_recordings?.length || 0);
+
     const all = [
       ...(data.dropbox_recordings || []),
       ...(data.onedrive_recordings || []),
       ...(data.meethour_recordings || []),
       ...(data.custom_recordings || []),
     ].map((r) => ({
-
       id: r.recording_id,
       topic: r.topic,
       date: r.recording_date,
@@ -3295,13 +3318,20 @@ app.get("/api/meethour-recordings", async (req, res) => {
       path: r.recording_path,
     }));
 
-
-
-
-    return res.json({ success: true, recordings: all });
+    return res.json({
+      success: true,
+      recordings: all,
+    });
   } catch (err) {
-    console.log("RECORDINGS ERROR:", err.response?.data || err.message);
-    return res.status(500).json({ success: false, error: err.response?.data || err.message });
+    console.log(
+      "RECORDINGS ERROR:",
+      err.response?.data || err.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      error: err.response?.data || err.message,
+    });
   }
 });
 
