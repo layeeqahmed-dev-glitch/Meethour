@@ -23,6 +23,7 @@ const Dashboard = ({ context }) => {
   const [loading, setLoading] = useState(false);
   const [recordings, setRecordings] = useState(null);
   const [recordingsLoading, setRecordingsLoading] = useState(false);
+  const [recordingType, setRecordingType] = useState("meethour");
 
   useEffect(() => {
     if (selected !== "my-meetings") return;
@@ -106,11 +107,40 @@ const Dashboard = ({ context }) => {
           </Flex>
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
-          <RecordingsList
-            recordings={recordings}
-            loading={recordingsLoading}
-            context={context}
-          />
+          <Flex direction="column" gap="lg">
+            <ButtonRow>
+              <Button
+                variant={recordingType === "meethour" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("meethour")}
+              >
+                MeetHour
+              </Button>
+              <Button
+                variant={recordingType === "dropbox" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("dropbox")}
+              >
+                Dropbox
+              </Button>
+              <Button
+                variant={recordingType === "onedrive" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("onedrive")}
+              >
+                OneDrive
+              </Button>
+              <Button
+                variant={recordingType === "customs3" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("customs3")}
+              >
+                CustomS3
+              </Button>
+            </ButtonRow>
+            <RecordingsList
+              recordings={(recordings || []).filter(
+                (r) => r.type?.toLowerCase() === recordingType.replace("customs3", "custom"),
+              )}
+              loading={recordingsLoading}
+            />
+          </Flex>
         </Tab>
         <Tab tabId="all-meetings" title="Show All Meetings">
           <Text>Show All Meetings — coming soon</Text>
