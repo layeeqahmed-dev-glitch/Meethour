@@ -3042,7 +3042,6 @@ app.get("/api/meethour-meetings", async (req, res) => {
       joinURL: m.joinURL,
       totalAttended: m.total_attended,
       invitees: m.no_of_invitees,
-      agenda: m.agenda,
       passcode: m.passcode
     }));
 
