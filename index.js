@@ -3273,13 +3273,20 @@ app.get("/api/meethour-recordings", async (req, res) => {
 
     const data = recRes.data;
     console.log("===== RECORDINGS DATA =====");
+    console.log("Dropbox:", data.dropbox_recordings?.length);
+    console.log("MeetHour:", data.meethour_recordings?.length);
+    console.log("OneDrive:", data.onedrive_recordings?.length);
+    console.log("Custom:", data.custom_recordings?.length);
     console.log(JSON.stringify(data, null, 2));
+
+    
     const all = [
       ...(data.dropbox_recordings || []),
       ...(data.onedrive_recordings || []),
       ...(data.meethour_recordings || []),
       ...(data.custom_recordings || []),
     ].map((r) => ({
+
       id: r.recording_id,
       topic: r.topic,
       date: r.recording_date,
@@ -3288,12 +3295,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
       path: r.recording_path,
     }));
 
-    console.log(
-      "Topic:",
-      r.topic,
-      "| recording_type:",
-      r.recording_type
-    );
+
 
 
     return res.json({ success: true, recordings: all });

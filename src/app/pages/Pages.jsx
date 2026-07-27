@@ -34,25 +34,22 @@ const Dashboard = ({ context }) => {
 
     hubspot
       .fetch(
-        `https://meethourhubs.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`,
+        `https://meethourhubs.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&_t=${Date.now()}`,
       )
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setMeetingsCache((prev) => ({
-          ...prev,
-          [meetingType]: data.meetings || [],
-        }));
-        setLoading(false);
+        setRecordings(data.recordings || []);
+        setRecordingsLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setRecordingsLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [selected, meetingType]);
+  }, [selected]);
 
   useEffect(() => {
     if (selected !== "my-recordings") return;
