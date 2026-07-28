@@ -21,7 +21,12 @@ const Dashboard = ({ context }) => {
     completed: null,
   });
   const [loading, setLoading] = useState(false);
-  const [recordings, setRecordings] = useState(null);
+  const [recordingsCache, setRecordingsCache] = useState({
+    meethour: null,
+    dropbox: null,
+    onedrive: null,
+    customs3: null,
+  });
   const [recordingsLoading, setRecordingsLoading] = useState(false);
   const [recordingType, setRecordingType] = useState("meethour");
 
@@ -56,19 +61,19 @@ const Dashboard = ({ context }) => {
 
   useEffect(() => {
     if (selected !== "my-recordings") return;
-    if (recordings !== null) return;
+    if (recordingsCache[recordingType]) return;
 
     let cancelled = false;
     setRecordingsLoading(true);
 
     hubspot
       .fetch(
-        `https://meethourhubs.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&_t=${Date.now()}`,
+        `https://meethourhubs.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&type=${recordingType}&_t=${Date.now()}`,
       )
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setRecordings(data.recordings || []);
+        setRecordingsCache((prev) => ({ ...prev, [recordingType]: data.recordings || [] }));
         setRecordingsLoading(false);
       })
       .catch(() => {
@@ -78,7 +83,7 @@ const Dashboard = ({ context }) => {
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [selected, recordingType]);
 
   return (
     <Tile>
@@ -135,11 +140,7 @@ const Dashboard = ({ context }) => {
       </Button>
     </ButtonRow>
     <RecordingsList
-      recordings={(recordings || []).filter(
-        (r) =>
-          r.type?.toLowerCase() ===
-          recordingType.replace("customs3", "custom"),
-      )}
+      recordings={recordingsCache[recordingType]}
       loading={recordingsLoading}
     />
   </Flex>
