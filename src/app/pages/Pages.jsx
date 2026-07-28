@@ -200,6 +200,14 @@ const MeetingCard = ({ m, type }) => (
   </Tile>
 );
 
+const chunk = (arr, size) => {
+  const rows = [];
+  for (let i = 0; i < arr.length; i += size) {
+    rows.push(arr.slice(i, i + size));
+  }
+  return rows;
+};
+
 const MeetingsList = ({ meetings, loading, type }) => {
   if (loading || meetings === null)
     return <LoadingSpinner label="Loading meetings..." />;
@@ -207,8 +215,12 @@ const MeetingsList = ({ meetings, loading, type }) => {
 
   return (
     <Flex direction="column" gap="lg">
-      {meetings.map((m) => (
-        <MeetingCard key={m.id} m={m} type={type} />
+      {chunk(meetings, 2).map((row, i) => (
+        <Flex key={i} direction="row" justify="between" gap="md">
+          {row.map((m) => (
+            <MeetingCard key={m.id} m={m} type={type} />
+          ))}
+        </Flex>
       ))}
     </Flex>
   );
