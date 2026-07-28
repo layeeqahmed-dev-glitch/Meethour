@@ -200,13 +200,6 @@ const MeetingCard = ({ m, type }) => (
   </Tile>
 );
 
-const chunk = (arr, size) => {
-  const rows = [];
-  for (let i = 0; i < arr.length; i += size) {
-    rows.push(arr.slice(i, i + size));
-  }
-  return rows;
-};
 
 const MeetingsList = ({ meetings, loading, type }) => {
   if (loading || meetings === null)
@@ -214,13 +207,9 @@ const MeetingsList = ({ meetings, loading, type }) => {
   if (!meetings.length) return <Text>No meetings found.</Text>;
 
   return (
-    <Flex direction="column" gap="lg">
-      {chunk(meetings, 3).map((row, i) => (
-        <Flex key={i} direction="row" justify="between" gap="md">
-          {row.map((m) => (
-            <MeetingCard key={m.id} m={m} type={type} />
-          ))}
-        </Flex>
+    <Flex direction="row" wrap="wrap" gap="medium">
+      {meetings.map((m) => (
+        <MeetingCard key={m.id} m={m} type={type} />
       ))}
     </Flex>
   );
