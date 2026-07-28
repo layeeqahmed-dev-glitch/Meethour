@@ -2994,6 +2994,7 @@ app.get("/api/meethour-meetings", async (req, res) => {
     await connectDB();
 
     const { portalId, type } = req.query;
+
     console.log("PORTAL ID:", portalId);
     console.log("TYPE:", type);
 
@@ -3022,39 +3023,86 @@ app.get("/api/meethour-meetings", async (req, res) => {
         ? "https://api.meethour.io/api/v1.2/meeting/completedmeetings"
         : "https://api.meethour.io/api/v1.2/meeting/upcomingmeetings";
 
+
     const meetingsRes = await axios.post(
       endpoint,
-      { limit: 10, page: 0, show_all: 1 },
+      {
+        limit: 10,
+        page: 0,
+        show_all: 1,
+      },
       {
         headers: {
           Authorization: `Bearer ${meethourToken}`,
           "Content-Type": "application/json",
         },
-      },
+      }
     );
 
-    const meetings = (meetingsRes.data.meetings || []).map((m) => ({
-      id: m.id,
-      topic: m.topic,
-      startTime: m.start_time,
-      timezone: m.timezone,
-      duration: m.duration,
-      joinURL: m.joinURL,
-      totalAttended: m.total_attended,
-      invitees: m.no_of_invitees,
-      passcode: m.passcode
-    }));
 
-    console.log(`FOUND ${meetings.length} ${type.toUpperCase()} MEETINGS`);
+    const meetings = (meetingsRes.data.meetings || []).map((m) => {
+
+      let formattedStartTime = m.start_time;
+
+      try {
+        if (m.start_time && m.timezone) {
+
+          // Treat API start_time as UTC
+          const utcDate = new Date(
+            m.start_time.replace(" ", "T") + "Z"
+          );
+
+          formattedStartTime = utcDate.toLocaleString("en-IN", {
+            timeZone: m.timezone,
+            dateStyle: "medium",
+            timeStyle: "short",
+          });
+
+        }
+      } catch (error) {
+        console.log(
+          "TIME CONVERSION ERROR:",
+          error.message
+        );
+      }
+
+
+      return {
+        id: m.id,
+        topic: m.topic,
+
+        // Converted display time
+        startTime: formattedStartTime,
+
+        // Original values (useful for debugging)
+        startTimeUTC: m.start_time,
+        timezone: m.timezone,
+
+        duration: m.duration,
+        joinURL: m.joinURL,
+        totalAttended: m.total_attended,
+        invitees: m.no_of_invitees,
+        passcode: m.passcode,
+      };
+    });
+
+
+    console.log(
+      `FOUND ${meetings.length} ${type.toUpperCase()} MEETINGS`
+    );
+
 
     return res.json({
       success: true,
       meetings,
     });
+
+
   } catch (err) {
+
     console.log(
       "MEETHOUR MEETINGS ERROR:",
-      err.response?.data || err.message,
+      err.response?.data || err.message
     );
 
     return res.status(500).json({
@@ -3063,6 +3111,7 @@ app.get("/api/meethour-meetings", async (req, res) => {
     });
   }
 });
+
 
 
 // CREATE FORM & WORKFLOW FUNCTION
