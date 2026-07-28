@@ -215,7 +215,7 @@ const MeetingsList = ({ meetings, loading, type }) => {
 
   return (
     <Flex direction="column" gap="lg">
-      {chunk(meetings, 2).map((row, i) => (
+      {chunk(meetings, 3).map((row, i) => (
         <Flex key={i} direction="row" justify="between" gap="md">
           {row.map((m) => (
             <MeetingCard key={m.id} m={m} type={type} />
