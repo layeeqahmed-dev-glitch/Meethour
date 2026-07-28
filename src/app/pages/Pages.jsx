@@ -157,7 +157,7 @@ const Dashboard = ({ context }) => {
 };
 
 const MeetingCard = ({ m, type }) => (
-  <Tile width="300px">
+  <Tile>
     <Flex direction="column" gap="sm">
       <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Meeting Name :</Text>
@@ -207,7 +207,7 @@ const MeetingsList = ({ meetings, loading, type }) => {
   if (!meetings.length) return <Text>No meetings found.</Text>;
 
   return (
-    <Flex direction="row" wrap="wrap" gap="medium">
+    <Flex direction="column" gap="lg">
       {meetings.map((m) => (
         <MeetingCard key={m.id} m={m} type={type} />
       ))}
