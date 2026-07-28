@@ -157,7 +157,7 @@ const Dashboard = ({ context }) => {
 };
 
 const MeetingCard = ({ m, type }) => (
-  <Tile>
+  <Tile width="300px">
     <Flex direction="column" gap="sm">
       <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Meeting Name :</Text>
