@@ -3024,7 +3024,7 @@ app.get("/api/meethour-meetings", async (req, res) => {
 
     const meetingsRes = await axios.post(
       endpoint,
-      { limit: 50, page: 0, show_all: 1 },
+      { limit: 10, page: 0, show_all: 1 },
       {
         headers: {
           Authorization: `Bearer ${meethourToken}`,
@@ -3284,7 +3284,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
       "https://api.meethour.io/api/v1.2/customer/videorecordinglist",
       {
         filter_by: filterBy,
-        limit: 50,
+        limit: 10,
         page: 0,
         show_all:1
       },
