@@ -178,11 +178,11 @@ const MeetingCard = ({ m, type }) => (
         </Text>
       </Flex>
       {type === "upcoming" && (
-       <Flex direction="row" gap="xs" wrap="nowrap">
-         <Text format={{ fontWeight: "bold" }}>Passcode :</Text>
-         <Text>{m.passcode || "N/A"}</Text>
-       </Flex>
-     )}
+        <Flex direction="row" gap="xs" wrap="nowrap">
+          <Text format={{ fontWeight: "bold" }}>Passcode :</Text>
+          <Text>{m.passcode || "N/A"}</Text>
+        </Flex>
+      )}
       {type === "upcoming" && (
         <Button
           href={{
