@@ -112,39 +112,39 @@ const Dashboard = ({ context }) => {
           </Flex>
         </Tab>
         <Tab tabId="my-recordings" title="My Recordings">
-  <Flex direction="column" gap="lg">
-    <ButtonRow>
-      <Button
-        variant={recordingType === "meethour" ? "primary" : "secondary"}
-        onClick={() => setRecordingType("meethour")}
-      >
-        MeetHour
-      </Button>
-      <Button
-        variant={recordingType === "dropbox" ? "primary" : "secondary"}
-        onClick={() => setRecordingType("dropbox")}
-      >
-        Dropbox
-      </Button>
-      <Button
-        variant={recordingType === "onedrive" ? "primary" : "secondary"}
-        onClick={() => setRecordingType("onedrive")}
-      >
-        OneDrive
-      </Button>
-      <Button
-        variant={recordingType === "customs3" ? "primary" : "secondary"}
-        onClick={() => setRecordingType("customs3")}
-      >
-        CustomS3
-      </Button>
-    </ButtonRow>
-    <RecordingsList
-      recordings={recordingsCache[recordingType]}
-      loading={recordingsLoading}
-    />
-  </Flex>
-</Tab>
+          <Flex direction="column" gap="lg">
+            <ButtonRow>
+              <Button
+                variant={recordingType === "meethour" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("meethour")}
+              >
+                MeetHour
+              </Button>
+              <Button
+                variant={recordingType === "dropbox" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("dropbox")}
+              >
+                Dropbox
+              </Button>
+              <Button
+                variant={recordingType === "onedrive" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("onedrive")}
+              >
+                OneDrive
+              </Button>
+              <Button
+                variant={recordingType === "customs3" ? "primary" : "secondary"}
+                onClick={() => setRecordingType("customs3")}
+              >
+                CustomS3
+              </Button>
+            </ButtonRow>
+            <RecordingsList
+              recordings={recordingsCache[recordingType]}
+              loading={recordingsLoading}
+            />
+          </Flex>
+        </Tab>
         <Tab tabId="all-meetings" title="Show All Meetings">
           <Text>Show All Meetings — coming soon</Text>
         </Tab>
@@ -172,11 +172,21 @@ const MeetingCard = ({ m, type }) => (
         <Text>{m.totalAttended || 0}</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Invitees :</Text>
+        <Text>{m.invitees || 0}</Text>
+      </Flex>
+      <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Date & Time :</Text>
         <Text>
           {m.startTime} ({m.timezone})
         </Text>
       </Flex>
+      {type === "upcoming" && (
+       <Flex direction="row" gap="xs" wrap="nowrap">
+         <Text format={{ fontWeight: "bold" }}>Passcode :</Text>
+         <Text>{m.passcode || "N/A"}</Text>
+       </Flex>
+     )}
       {type === "upcoming" && (
         <Button
           href={{
