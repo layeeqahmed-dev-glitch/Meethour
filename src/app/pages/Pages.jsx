@@ -168,10 +168,6 @@ const MeetingCard = ({ m, type }) => (
         <Text>{m.duration} hr</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Attend :</Text>
-        <Text>{m.totalAttended || 0}</Text>
-      </Flex>
-      <Flex direction="row" gap="xs" wrap="nowrap">
         <Text format={{ fontWeight: "bold" }}>Invitees :</Text>
         <Text>{m.invitees || 0}</Text>
       </Flex>
