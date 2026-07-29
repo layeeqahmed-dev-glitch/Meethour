@@ -2203,12 +2203,21 @@ app.post("/create-meeting", async (req, res) => {
       meeting_date,
       meeting_time,
       meeting_meridiem: meridiem,
-      timezone: resolvedTimezone, //  MeetHour user ka actual timezone
+      timezone: resolvedTimezone,
       passcode: generatePasscode(),
       attend,
       send_calendar_invite: 1,
       duration_hr,
       duration_min,
+      "options": [
+        "ALLOW_GUEST",
+        "JOIN_ANYTIME",
+        "ENABLE_LOBBY ",
+        "WHITE_BOARD",
+        "LIVEPAD",
+        "DONOR_BOX",
+        "CP_CONNECT",
+      ],
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : [],
     };
 
