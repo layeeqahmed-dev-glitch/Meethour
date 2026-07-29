@@ -146,12 +146,6 @@ const Dashboard = ({ context }) => {
             />
           </Flex>
         </Tab>
-        <Tab tabId="all-meetings" title="Show All Meetings">
-          <Text>Show All Meetings — coming soon</Text>
-        </Tab>
-        <Tab tabId="setup" title="Setup">
-          <Text>Setup — coming soon</Text>
-        </Tab>
       </Tabs>
     </Tile>
   );
