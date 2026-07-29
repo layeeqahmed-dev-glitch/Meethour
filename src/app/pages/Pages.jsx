@@ -3,7 +3,6 @@ import {
   Tile,
   Tabs,
   Button,
-  Divider,
   Tab,
   Text,
   ButtonRow,
@@ -218,37 +217,34 @@ const MeetingsList = ({ meetings, loading, type }) => {
 
 const RecordingCard = ({ r, context }) => (
   <Tile>
-    <Flex direction="column" gap="md">
-      <Text format={{ fontWeight: "bold", fontSize: "large" }}>
-        {r.topic}
-      </Text>
-      <Divider />
+    <Flex direction="column" gap="sm">
       <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Meeting ID:</Text>
-        <Text>{r.id}</Text>
+        <Text format={{ fontWeight: "bold" }}>Recording :</Text>
+        <Text>{r.topic}</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Date:</Text>
-        <Text>{r.date}</Text>
+        <Text format={{ fontWeight: "bold" }}>Type :</Text>
+        <Text>{r.type}</Text>
       </Flex>
       <Flex direction="row" gap="xs" wrap="nowrap">
-        <Text format={{ fontWeight: "bold" }}>Duration:</Text>
+        <Text format={{ fontWeight: "bold" }}>Duration :</Text>
         <Text>{r.duration}</Text>
       </Flex>
-      <Divider />
-      <Flex direction="row" justify="center">
-        <Button
-          href={{
-            url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
-            external: true,
-          }}
-          variant="primary"
-          size="md"
-          type="button"
-        >
-          Play Video
-        </Button>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Date :</Text>
+        <Text>{r.date}</Text>
       </Flex>
+      <Button
+        href={{
+          url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
+          external: true,
+        }}
+        variant="secondary"
+        size="md"
+        type="button"
+      >
+        Play Recording
+      </Button>
     </Flex>
   </Tile>
 );
