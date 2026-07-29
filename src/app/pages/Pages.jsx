@@ -223,10 +223,17 @@ const RecordingCard = ({ r, context }) => (
         {r.topic}
       </Text>
       <Divider />
-      <Flex direction="column" gap="xs">
-        <Text format={{ fontWeight: "bold" }} >Meeting ID: {r.id}</Text>
-        <Text format={{ fontWeight: "bold" }} >Date: {r.date}</Text>
-        <Text format={{ fontWeight: "bold" }} >Duration: {r.duration}</Text>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Meeting ID:</Text>
+        <Text>{r.id}</Text>
+      </Flex>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Date:</Text>
+        <Text>{r.date}</Text>
+      </Flex>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+        <Text format={{ fontWeight: "bold" }}>Duration:</Text>
+        <Text>{r.duration}</Text>
       </Flex>
       <Divider />
       <Flex direction="row" justify="center">
