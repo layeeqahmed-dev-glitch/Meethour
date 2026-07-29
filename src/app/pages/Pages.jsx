@@ -224,9 +224,9 @@ const RecordingCard = ({ r, context }) => (
       </Text>
       <Divider />
       <Flex direction="column" gap="xs">
-        <Text>Meeting ID: {r.id}</Text>
-        <Text>Date: {r.date}</Text>
-        <Text>Duration: {r.duration}</Text>
+        <Text format={{ fontWeight: "bold" }} >Meeting ID: {r.id}</Text>
+        <Text format={{ fontWeight: "bold" }} >Date: {r.date}</Text>
+        <Text format={{ fontWeight: "bold" }} >Duration: {r.duration}</Text>
       </Flex>
       <Divider />
       <Flex direction="row" justify="center">
