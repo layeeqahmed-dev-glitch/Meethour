@@ -719,7 +719,6 @@ app.get("/callback", async (req, res) => {
         fieldType: "text",
         groupName: "contactinformation",
         displayOrder: 0,
-        formField: true
       },
       {
         name: "meeting_date",
@@ -728,7 +727,6 @@ app.get("/callback", async (req, res) => {
         fieldType: "date",
         groupName: "contactinformation",
         displayOrder: 1,
-        formField: true
       },
       {
         name: "meeting_time",
@@ -737,7 +735,6 @@ app.get("/callback", async (req, res) => {
         fieldType: "select",
         groupName: "contactinformation",
         displayOrder: 2,
-        formField: true,
         options: [
           { label: "12:00", value: "12:00", displayOrder: 0 },
           { label: "12:30", value: "12:30", displayOrder: 1 },
@@ -772,7 +769,6 @@ app.get("/callback", async (req, res) => {
         fieldType: "select",
         groupName: "contactinformation",
         displayOrder: 3,
-        formField: true,
         options: [
           { label: "AM", value: "AM", displayOrder: 0 },
           { label: "PM", value: "PM", displayOrder: 1 },
@@ -785,7 +781,6 @@ app.get("/callback", async (req, res) => {
         fieldType: "select",
         groupName: "contactinformation",
         displayOrder: 4,
-        formField: true,
         options: [
           "Etc/GMT+12",
           "Pacific/Midway",
