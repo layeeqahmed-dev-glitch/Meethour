@@ -2514,6 +2514,11 @@ app.post("/deal-webhook", async (req, res) => {
       );
       console.log("MeetHour raw:", JSON.stringify(meetingRes.data, null, 2));
 
+      if (!meetingRes.data.success) {
+       console.log("MeetHour meeting creation failed:", meetingRes.data.message);
+       continue;
+     }
+
       const meeting = meetingRes.data.data;
       console.log("Meeting created:", meeting.joinURL);
 
