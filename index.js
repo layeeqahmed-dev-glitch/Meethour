@@ -3425,7 +3425,7 @@ app.get("/api/meethour-recording-stream", async (req, res) => {
   }
 });
 
-app.post("/thankyou", (req, res) => {
+app.get("/thankyou", (req, res) => {
   res.send("Thank you for submitting the form. We will reach out to you soon.");
 });
 
