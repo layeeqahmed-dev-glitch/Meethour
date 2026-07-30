@@ -2449,11 +2449,7 @@ app.post("/deal-webhook", async (req, res) => {
       console.log("Raw meeting_meridiem:", deal.properties.meeting_meridiem);
       console.log("Raw timezone:", deal.properties.timezone);
 
-      const meetingDateTime = new Date(`${meeting_date} ${meeting_time} ${meeting_meridiem}`);
-       if (meetingDateTime < new Date()) {
-         console.log("Meeting date/time is in the past, skipping:", meeting_date, meeting_time, meeting_meridiem);
-         continue;
-       }
+      
 
       const contactId = deal.associations?.contacts?.results?.[0]?.id;
       if (!contactId) {
