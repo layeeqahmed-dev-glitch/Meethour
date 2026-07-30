@@ -2552,7 +2552,7 @@ app.post("/deal-webhook", async (req, res) => {
             hs_meeting_body: `<br><br><b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
             <b>Topic:</b> ${dealName}<br>
             <b>Date & Time:</b> ${meeting_date}, ${formattedTime}<br><br>
-            <b>MeetHour Url:</b> ${meeting.joinURL}<br><br>
+            <b>Meeting Url:</b> ${meeting.joinURL}<br><br>
             <b>Meeting ID:</b> ${meeting.meeting_id}<br>
             <b>Passcode:</b> ${meeting.passcode}`,
 
@@ -3425,6 +3425,9 @@ app.get("/api/meethour-recording-stream", async (req, res) => {
   }
 });
 
+app.post("/thankyou", (req, res) => {
+  res.send("Thank you for submitting the form. We will reach out to you soon.");
+});
 
 //localhost running @ 3000
 if (process.env.NODE_ENV !== "production") {
