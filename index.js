@@ -2016,6 +2016,8 @@ app.get("/callback", async (req, res) => {
     }
 
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
+    console.log("REDIRECTING TO MEETHOUR LOGIN:", meethourRedirect);
+
     res.redirect(
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
     );
