@@ -6,9 +6,7 @@ const axios = require("axios");
 const qs = require("querystring");
 const connectDB = require("./db");
 const Meeting = require("./models/meetings");
-const convertHubspotTimezone = require("./timezoneMap");
 const Token = require("./models/token");
-const mongoose = require("mongoose");
 const Test = require("./models/test");
 
 connectDB()
@@ -21,8 +19,8 @@ connectDB()
 
 // Parse all incoming request bodies as plain text
 app.use(express.text({ type: "*/*" }));
-
 console.log("Calling refreshHubspotToken...");
+
 //hubspot token refresh function
 const refreshHubspotToken = async (portalId) => {
   console.log("REFRESHING TOKEN FOR PORTAL:", portalId);
@@ -32,7 +30,6 @@ const refreshHubspotToken = async (portalId) => {
   });
 
   console.log("TOKEN RECORD:");
-
   console.log(tokenRecord);
 
   if (!tokenRecord) {
@@ -89,11 +86,10 @@ app.get("/", (req, res) => {
   res.send("Server is responding");
 });
 
-//calback
+//callback
 app.get("/callback", async (req, res) => {
   try {
     const code = req.query.code;
-
     if (!code) {
       return res.status(400).send("No code provided!");
     }
@@ -1247,7 +1243,7 @@ app.get("/callback", async (req, res) => {
         console.log("Contact property created:", prop.name);
       } catch (err) {
         console.log(
-          "Contact property skipped (may exist):",
+          "Contact property skipped",
           prop.name,
           err.response?.data?.message,
         );

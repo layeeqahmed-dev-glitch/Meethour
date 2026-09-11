@@ -37,9 +37,9 @@
     },
     "support": {
       "supportEmail": "hello@meethour.io",
-      "documentationUrl": "https://example.com/docs",
-      "supportUrl": "https://example.com/support",
-      "supportPhone": "+18005555555"
+      "documentationUrl": "https://kb.meethour.io/",
+      "supportUrl": "https://meethour.io/contact",
+      "supportPhone": "+1 (312) 800-9410"
     }
   }
 }

@@ -8,7 +8,7 @@ const connectDB = async () => {
   }
 
   if (!process.env.MONGO_URI) {
-    console.warn('⚠️ MONGO_URI not set - running without database');
+    console.warn('MONGO_URI not set - running without database');
     return;
   }
 
@@ -19,15 +19,15 @@ const connectDB = async () => {
     serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
       connectTimeoutMS: 30000,
-      tls: true,                  // ✅ enable TLS/SSL
+      tls: true,                  // enable TLS/SSL
       tlsAllowInvalidCertificates: false,
     });
 
     isConnected = db.connections[0].readyState;
-    console.log('MongoDB Connected! ✅');
+    console.log('MongoDB Connected!');
 
   } catch (error) {
-    console.warn('⚠️ MongoDB connection failed:', error.message);
+    console.warn('MongoDB connection failed:', error.message);
   }
 };
 
