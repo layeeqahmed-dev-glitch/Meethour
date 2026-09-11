@@ -7,7 +7,6 @@ const qs = require("querystring");
 const connectDB = require("./db");
 const Meeting = require("./models/meetings");
 const Token = require("./models/token");
-const Test = require("./models/test");
 
 connectDB()
   .then(() => {
