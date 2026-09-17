@@ -232,6 +232,10 @@ const RecordingCard = ({ r, actions }) => (
         <Text format={{ fontWeight: "bold" }}>Date :</Text>
         <Text>{r.date}</Text>
       </Flex>
+      <Flex direction="row" gap="xs" wrap="nowrap">
+       <Text format={{ fontWeight: "bold" }}>Debug ID :</Text>
+       <Text>{JSON.stringify(r.id)}</Text>
+      </Flex>
       <Button
         variant="secondary"
         size="md"
