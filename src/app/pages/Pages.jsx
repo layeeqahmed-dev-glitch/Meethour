@@ -11,9 +11,11 @@ import {
   hubspot,
 } from "@hubspot/ui-extensions";
 
-hubspot.extend(({ context }) => <Dashboard context={context} />);
+hubspot.extend(({ context, actions }) => (
+  <Dashboard context={context} actions={actions} />
+));
 
-const Dashboard = ({ context }) => {
+const Dashboard = ({ context, actions }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
   const [meetingsCache, setMeetingsCache] = useState({
@@ -143,6 +145,7 @@ const Dashboard = ({ context }) => {
             <RecordingsList
               recordings={recordingsCache[recordingType]}
               loading={recordingsLoading}
+              actions={actions}
             />
           </Flex>
         </Tab>
@@ -210,7 +213,7 @@ const MeetingsList = ({ meetings, loading, type }) => {
   );
 };
 
-const RecordingCard = ({ r, context }) => (
+const RecordingCard = ({ r, actions }) => (
   <Tile>
     <Flex direction="column" gap="sm">
       <Flex direction="row" gap="xs" wrap="nowrap">
@@ -230,13 +233,16 @@ const RecordingCard = ({ r, context }) => (
         <Text>{r.date}</Text>
       </Flex>
       <Button
-        href={{
-          url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
-          external: true,
-        }}
         variant="secondary"
         size="md"
         type="button"
+        onClick={() =>
+          actions.openIframeModal({
+            url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
+            height: 600,
+            width: 900,
+          })
+        }
       >
         Play Recording
       </Button>
@@ -244,7 +250,7 @@ const RecordingCard = ({ r, context }) => (
   </Tile>
 );
 
-const RecordingsList = ({ recordings, loading, context }) => {
+const RecordingsList = ({ recordings, loading, actions  }) => {
   if (loading || recordings === null)
     return <LoadingSpinner label="Loading recordings..." />;
   if (!recordings.length) return <Text>No recordings found.</Text>;
@@ -252,7 +258,7 @@ const RecordingsList = ({ recordings, loading, context }) => {
   return (
     <Flex direction="column" gap="lg">
       {recordings.map((r) => (
-        <RecordingCard key={r.id + r.date} r={r} context={context} />
+        <RecordingCard key={r.id + r.date} r={r} actions={actions} />
       ))}
     </Flex>
   );
