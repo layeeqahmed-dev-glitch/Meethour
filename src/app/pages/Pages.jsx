@@ -242,7 +242,7 @@ const RecordingCard = ({ r, actions }) => (
         type="button"
         onClick={() =>
           actions.openIframeModal({
-            url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
+            uri: `https://portal.meethour.io/customer/view_recording/${r.id}`,
             height: 600,
             width: 900,
           })
