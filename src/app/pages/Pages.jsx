@@ -11,11 +11,9 @@ import {
   hubspot,
 } from "@hubspot/ui-extensions";
 
-hubspot.extend(({ context, actions }) => (
-  <Dashboard context={context} actions={actions} />
-));
+hubspot.extend(({ context }) => <Dashboard context={context} />);
 
-const Dashboard = ({ context, actions }) => {
+const Dashboard = ({ context }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
   const [meetingsCache, setMeetingsCache] = useState({
@@ -60,7 +58,6 @@ const Dashboard = ({ context, actions }) => {
       cancelled = true;
     };
   }, [selected, meetingType]);
-
 
   useEffect(() => {
     if (selected !== "my-recordings") return;
@@ -145,7 +142,6 @@ const Dashboard = ({ context, actions }) => {
             <RecordingsList
               recordings={recordingsCache[recordingType]}
               loading={recordingsLoading}
-              actions={actions}
             />
           </Flex>
         </Tab>
@@ -198,7 +194,6 @@ const MeetingCard = ({ m, type }) => (
   </Tile>
 );
 
-
 const MeetingsList = ({ meetings, loading, type }) => {
   if (loading || meetings === null)
     return <LoadingSpinner label="Loading meetings..." />;
@@ -213,7 +208,7 @@ const MeetingsList = ({ meetings, loading, type }) => {
   );
 };
 
-const RecordingCard = ({ r, actions }) => (
+const RecordingCard = ({ r }) => (
   <Tile>
     <Flex direction="column" gap="sm">
       <Flex direction="row" gap="xs" wrap="nowrap">
@@ -232,21 +227,14 @@ const RecordingCard = ({ r, actions }) => (
         <Text format={{ fontWeight: "bold" }}>Date :</Text>
         <Text>{r.date}</Text>
       </Flex>
-      <Flex direction="row" gap="xs" wrap="nowrap">
-       <Text format={{ fontWeight: "bold" }}>Debug ID :</Text>
-       <Text>{JSON.stringify(r.id)}</Text>
-      </Flex>
       <Button
+        href={{
+          url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
+          external: true,
+        }}
         variant="secondary"
         size="md"
         type="button"
-        onClick={() =>
-          actions.openIframeModal({
-            uri: `https://portal.meethour.io/customer/view_recording/${r.id}`,
-            height: 600,
-            width: 900,
-          })
-        }
       >
         Play Recording
       </Button>
@@ -254,7 +242,7 @@ const RecordingCard = ({ r, actions }) => (
   </Tile>
 );
 
-const RecordingsList = ({ recordings, loading, actions  }) => {
+const RecordingsList = ({ recordings, loading }) => {
   if (loading || recordings === null)
     return <LoadingSpinner label="Loading recordings..." />;
   if (!recordings.length) return <Text>No recordings found.</Text>;
@@ -262,7 +250,7 @@ const RecordingsList = ({ recordings, loading, actions  }) => {
   return (
     <Flex direction="column" gap="lg">
       {recordings.map((r) => (
-        <RecordingCard key={r.id + r.date} r={r} actions={actions} />
+        <RecordingCard key={r.id + r.date} r={r} />
       ))}
     </Flex>
   );
