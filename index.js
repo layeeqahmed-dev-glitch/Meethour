@@ -80,9 +80,88 @@ const refreshHubspotToken = async (portalId) => {
   return response.data.access_token;
 };
 
-//root
-app.get("/", (req, res) => {
-  res.send("Server is responding");
+
+// setup-page
+app.get("/setup", (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>MeetHour for HubSpot — Setup Guide</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        h1 {
+            color: #FF7A59;
+        }
+
+        h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>MeetHour for HubSpot — Setup Guide</h1>
+    <p>This guide walks you through installing and configuring the MeetHour integration for HubSpot.</p>
+
+    <h2>1. Install the App</h2>
+    <ol>
+        <li>Go to the MeetHour listing on the HubSpot Marketplace.</li>
+        <li>Click <b>Install app</b>.</li>
+        <li>Select the HubSpot account (portal) you want to connect.</li>
+        <li>Authorize the requested permissions (contacts, deals, forms, owners, users, workflows).</li>
+    </ol>
+
+    <h2>2. Connect Your MeetHour Account</h2>
+    <ol>
+        <li>After HubSpot authorization, you'll be redirected to MeetHour login.</li>
+        <li>Log in with your MeetHour Developer account.</li>
+        <li>Once authorized, you'll be redirected back to HubSpot — installation is complete.</li>
+    </ol>
+
+    <h2>3. What Gets Set Up Automatically</h2>
+    <ul>
+        <li><b>Custom Deal properties:</b> Meeting Date, Meeting Time, Meeting Meridiem, Timezone</li>
+        <li><b>Custom Contact properties:</b> Meeting Name, Meeting Date, Meeting Time, Meeting Meridiem, Timezone</li>
+        <li><b>A HubSpot Form:</b> "MeetHour Meeting Scheduler"</li>
+        <li><b>A Workflow:</b> triggers meeting creation on form submission</li>
+    </ul>
+
+    <h2>4. Ways to Schedule a Meeting</h2>
+    <p><b>Via Form Submission</b> — share the auto-created form; submitting it creates a meeting automatically.</p>
+    <p><b>Via Deal Stage</b> — open the deal and click "Edit" on the deal form. You'll see a "Meet Hour" section — click
+        it to reveal 4 checkboxes (Meeting Name, Date, Time, Meridiem). Check all 4, fill in the values, and save. When
+        creating the deal, make sure to assign a Contact — without an associated contact, the meeting will not be
+        scheduled. Once saved, set the deal stage to "Appointment Scheduled" or "Presentation Scheduled" to trigger the
+        meeting.</p>
+
+    <p><b>Via Meeting Scheduler (VCE)</b> — use HubSpot's native scheduler with MeetHour as provider.</p>
+    <p><b>Manually from a Contact Record</b> — schedule directly from the contact records.</p>
+
+    <h2>5. Where to View Meetings</h2>
+    <p>You can also view your meetings and recordings directly: click the <b>Marketplace icon</b> in HubSpot, go to <b>"Your recently visited apps"</b>, and click <b>MeetHour</b> — this opens a dashboard page showing your meetings and recordings.</p>
+
+</body>
+
+</html>
+  `);
 });
 
 //callback
