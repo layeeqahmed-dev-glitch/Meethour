@@ -2352,7 +2352,7 @@ app.post("/create-meeting", async (req, res) => {
     console.log("FINAL OWNER NAME:", ownerName);
     console.log("========== END DEBUG ==========");
 
-    const details = `<b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
+    const details = `
       <b>Topic:</b> ${meeting.topic}
       <b>Date & Time:</b> ${formattedTime} (${resolvedTimezone})<br>
       <b>Meeting Url</b>: ${meeting.joinURL}<br>
@@ -2625,7 +2625,7 @@ app.post("/deal-webhook", async (req, res) => {
             hubspot_owner_id: ownerId ? Number(ownerId) : undefined,
 
             hs_meeting_title: dealName,
-            hs_meeting_body: `<br><br><b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
+            hs_meeting_body: `
             <b>Topic:</b> ${dealName}<br>
             <b>Date & Time:</b> ${meeting_date}, ${formattedTime}<br><br>
             <b>Meeting Url:</b> ${meeting.joinURL}<br><br>
@@ -3019,7 +3019,7 @@ app.post("/form-webhook", async (req, res) => {
               hubspot_owner_id: hubspotOwnerId,
 
               hs_meeting_title: meeting_name,
-              hs_meeting_body: `<br><b>${ownerName} is inviting you to a scheduled meeting.</b><br><br>
+              hs_meeting_body: `
                   <b>Topic:</b> ${meeting_name}<br>
                   <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
                   <b>Meeting Url:</b> ${meeting.joinURL}<br><br>
