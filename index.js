@@ -478,7 +478,7 @@ app.get("/callback", async (req, res) => {
           hubspotPortalId: portalId,
           hubspotAccessToken: hubspotAccessToken,
           hubspotRefreshToken: hubspotRefreshToken,
-          status: "active",
+          status: "meethour_connected",
           updatedAt: new Date(),
         },
         {
@@ -1332,6 +1332,7 @@ app.get("/meethour-callback", async (req, res) => {
     );
 
     return res.redirect(hubspotContinueUrl.toString());
+    
   } catch (err) {
     console.error("MeetHour Callback Error:", err.message);
     res.status(500).send("Something went wrong!");
