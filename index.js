@@ -40,7 +40,7 @@ const refreshHubspotToken = async (portalId) => {
   }
 
   const response = await axios.post(
-    "https://api.hubapi.com/oauth/v1/token",
+    "https://api.hubapi.com/oauth/v3/token",
 
     new URLSearchParams({
       grant_type: "refresh_token",
@@ -64,7 +64,7 @@ const refreshHubspotToken = async (portalId) => {
   console.log(JSON.stringify(response.data, null, 2));
 
   await Token.findOneAndUpdate(
-    {
+    { 
       hubspotPortalId: String(portalId),
     },
 
@@ -173,7 +173,7 @@ app.get("/callback", async (req, res) => {
     }
     await connectDB();
     const tokenResponse = await axios.post(
-      "https://api.hubapi.com/oauth/v1/token",
+      "https://api.hubapi.com/oauth/v3/token",
       qs.stringify({
         grant_type: "authorization_code",
         client_id: process.env.HUBSPOT_CLIENT_ID,
