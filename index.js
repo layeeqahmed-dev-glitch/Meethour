@@ -163,6 +163,11 @@ app.get("/setup", (req, res) => {
 });
 // callback
 app.get("/callback", async (req, res) => {
+  console.log("STEP:", req.query.step);
+  console.log("CODE EXISTS:", !!req.query.code);
+  console.log("STATE:", req.query.state);
+  console.log("RETURN URL:", req.query.returnUrl);
+  console.log("======================================");
   try {
     const { step, returnUrl, code, state } = req.query;
 
@@ -386,15 +391,23 @@ app.get("/callback", async (req, res) => {
        * Make sure the return URL has not changed.
        */
 
-      if (
-        pendingRecord.hubspotReturnUrl &&
-        pendingRecord.hubspotReturnUrl !== returnUrl
-      ) {
-        console.log("Return URL mismatch.");
+      if (pendingRecord.hubspotReturnUrl && returnUrl) {
+        const savedReturnUrl = new URL(pendingRecord.hubspotReturnUrl);
+        const currentReturnUrl = new URL(returnUrl);
 
-        return res.status(400).send(
-          "Invalid installation session."
-        );
+        if (
+          savedReturnUrl.origin !== currentReturnUrl.origin ||
+          savedReturnUrl.pathname !== currentReturnUrl.pathname
+        ) {
+          console.log("========== RETURN URL MISMATCH ==========");
+          console.log("SAVED:", pendingRecord.hubspotReturnUrl);
+          console.log("CURRENT:", returnUrl);
+          console.log("=========================================");
+
+          return res.status(400).send(
+            "Invalid installation session."
+          );
+        }
       }
 
       /*
@@ -1305,7 +1318,7 @@ app.get("/meethour-callback", async (req, res) => {
     console.log("Updating installation:", pendingRecord.installState);
     // console.log("Token to save:", token);
 
-        await Token.findOneAndUpdate(
+    await Token.findOneAndUpdate(
       { installState: pendingRecord.installState },
       {
         meethourAccessToken: token,
