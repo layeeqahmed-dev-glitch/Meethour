@@ -44,11 +44,8 @@ const refreshHubspotToken = async (portalId) => {
 
     new URLSearchParams({
       grant_type: "refresh_token",
-
       client_id: process.env.HUBSPOT_CLIENT_ID,
-
       client_secret: process.env.HUBSPOT_CLIENT_SECRET,
-
       refresh_token: tokenRecord.hubspotRefreshToken,
     }),
 
@@ -163,1949 +160,1117 @@ app.get("/setup", (req, res) => {
 </html>
   `);
 });
-
-//callback
+// callback
 app.get("/callback", async (req, res) => {
   try {
-    const code = req.query.code;
-    if (!code) {
-      return res.status(400).send("No code provided!");
-    }
-    await connectDB();
-    const tokenResponse = await axios.post(
-      "https://api.hubapi.com/oauth/v1/token",
-      qs.stringify({
-        grant_type: "authorization_code",
-        client_id: process.env.HUBSPOT_CLIENT_ID,
-        client_secret: process.env.HUBSPOT_CLIENT_SECRET,
-        redirect_uri: process.env.HUBSPOT_REDIRECT_URI,
-        code: code,
-      }),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
-    );
+    const { step, returnUrl, code, state } = req.query;
 
-    const hubspotAccessToken = tokenResponse.data.access_token;
-    const hubspotRefreshToken = tokenResponse.data.refresh_token;
+    console.log("========================================");
+    console.log("HUBSPOT CALLBACK");
+    console.log("STEP:", step);
+    console.log("RETURN URL:", returnUrl);
+    console.log("HAS CODE:", !!code);
+    console.log("STATE:", state ? "received" : "missing");
+    console.log("========================================");
 
-    const portalRes = await axios.get(
-      `https://api.hubapi.com/oauth/v1/access-tokens/${hubspotAccessToken}`,
-    );
-    const portalId = portalRes.data.hub_id;
+    /*
+    ============================================================
+    STEP 1: AUTHORIZE
+    ============================================================
+    
+    HubSpot sends:
 
-    console.log("HubSpot token saved for portal:", portalId);
+    /callback?step=authorize&returnUrl=...
 
-    await Token.findOneAndUpdate(
-      { hubspotPortalId: portalId },
-      {
-        hubspotAccessToken,
-        hubspotRefreshToken,
-        meethourAccessToken: null,
+    There is NO HubSpot OAuth code at this point.
+
+    We:
+    1. Validate returnUrl
+    2. Generate state
+    3. Save installation session in MongoDB
+    4. Send user to MeetHour login
+    ============================================================
+    */
+
+    if (step === "authorize") {
+      if (!returnUrl) {
+        return res.status(400).send(
+          "Missing HubSpot returnUrl!"
+        );
+      }
+
+      // Only allow HubSpot return URLs
+      let parsedReturnUrl;
+
+      try {
+        parsedReturnUrl = new URL(returnUrl);
+      } catch (err) {
+        return res.status(400).send(
+          "Invalid HubSpot returnUrl!"
+        );
+      }
+
+      if (
+        parsedReturnUrl.protocol !== "https:" ||
+        !parsedReturnUrl.hostname.endsWith("hubspot.com")
+      ) {
+        return res.status(400).send(
+          "Invalid HubSpot returnUrl!"
+        );
+      }
+
+      await connectDB();
+
+      /*
+       * Generate a secure state token.
+       *
+       * crypto must already be imported:
+       *
+       * const crypto = require("crypto");
+       */
+
+      const installState = crypto.randomBytes(32).toString("hex");
+
+      console.log(
+        "Generated installation state:",
+        installState
+      );
+
+      /*
+       * Save the pending installation.
+       *
+       * We do NOT know the HubSpot portal ID yet.
+       */
+
+      await Token.create({
+        installState: installState,
+        hubspotReturnUrl: returnUrl,
         status: "pending",
-      },
-      { upsert: true, new: true },
-    );
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-    console.log("Token saved with status: pending");
-
-    // Creating Deal property
-    try {
-      await axios.post(
-        "https://api.hubapi.com/crm/v3/properties/deals/groups",
-        { name: "meet_hour", label: "Meet Hour", displayOrder: 1 },
-        {
-          headers: {
-            Authorization: `Bearer ${hubspotAccessToken}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      console.log("Property group created");
-    } catch (err) {
-      console.log("Group skipped (may exist):", err.response?.data?.message);
-    }
-
-    // Creating Deal properties
-    const dealProperties = [
-      {
-        name: "meeting_date",
-        label: "Meeting Date",
-        type: "date",
-        fieldType: "date",
-        groupName: "meet_hour",
-        displayOrder: 0,
-      },
-      {
-        name: "meeting_time",
-        label: "Meeting Time",
-        type: "enumeration",
-        fieldType: "select",
-        groupName: "meet_hour",
-        displayOrder: 1,
-        options: [
-          { label: "12:00", value: "12:00", displayOrder: 0 },
-          { label: "12:15", value: "12:15", displayOrder: 1 },
-          { label: "12:30", value: "12:30", displayOrder: 2 },
-          { label: "12:45", value: "12:45", displayOrder: 3 },
-          { label: "01:00", value: "01:00", displayOrder: 4 },
-          { label: "01:15", value: "01:15", displayOrder: 5 },
-          { label: "01:30", value: "01:30", displayOrder: 6 },
-          { label: "01:45", value: "01:45", displayOrder: 7 },
-          { label: "02:00", value: "02:00", displayOrder: 8 },
-          { label: "02:15", value: "02:15", displayOrder: 9 },
-          { label: "02:30", value: "02:30", displayOrder: 10 },
-          { label: "02:45", value: "02:45", displayOrder: 11 },
-          { label: "03:00", value: "03:00", displayOrder: 12 },
-          { label: "03:15", value: "03:15", displayOrder: 13 },
-          { label: "03:30", value: "03:30", displayOrder: 14 },
-          { label: "03:45", value: "03:45", displayOrder: 15 },
-          { label: "04:00", value: "04:00", displayOrder: 16 },
-          { label: "04:15", value: "04:15", displayOrder: 17 },
-          { label: "04:30", value: "04:30", displayOrder: 18 },
-          { label: "04:45", value: "04:45", displayOrder: 19 },
-          { label: "05:00", value: "05:00", displayOrder: 20 },
-          { label: "05:15", value: "05:15", displayOrder: 21 },
-          { label: "05:30", value: "05:30", displayOrder: 22 },
-          { label: "05:45", value: "05:45", displayOrder: 23 },
-          { label: "06:00", value: "06:00", displayOrder: 24 },
-          { label: "06:15", value: "06:15", displayOrder: 25 },
-          { label: "06:30", value: "06:30", displayOrder: 26 },
-          { label: "06:45", value: "06:45", displayOrder: 27 },
-          { label: "07:00", value: "07:00", displayOrder: 28 },
-          { label: "07:15", value: "07:15", displayOrder: 29 },
-          { label: "07:30", value: "07:30", displayOrder: 30 },
-          { label: "07:45", value: "07:45", displayOrder: 31 },
-          { label: "08:00", value: "08:00", displayOrder: 32 },
-          { label: "08:15", value: "08:15", displayOrder: 33 },
-          { label: "08:30", value: "08:30", displayOrder: 34 },
-          { label: "08:45", value: "08:45", displayOrder: 35 },
-          { label: "09:00", value: "09:00", displayOrder: 36 },
-          { label: "09:15", value: "09:15", displayOrder: 37 },
-          { label: "09:30", value: "09:30", displayOrder: 38 },
-          { label: "09:45", value: "09:45", displayOrder: 39 },
-          { label: "10:00", value: "10:00", displayOrder: 40 },
-          { label: "10:15", value: "10:15", displayOrder: 41 },
-          { label: "10:30", value: "10:30", displayOrder: 42 },
-          { label: "10:45", value: "10:45", displayOrder: 43 },
-          { label: "11:00", value: "11:00", displayOrder: 44 },
-          { label: "11:15", value: "11:15", displayOrder: 45 },
-          { label: "11:30", value: "11:30", displayOrder: 46 },
-          { label: "11:45", value: "11:45", displayOrder: 47 },
-        ],
-      },
-      {
-        name: "meeting_meridiem",
-        label: "Meeting Meridiem",
-        type: "enumeration",
-        fieldType: "select",
-        groupName: "meet_hour",
-        displayOrder: 2,
-        options: [
-          { label: "AM", value: "AM", displayOrder: 0 },
-          { label: "PM", value: "PM", displayOrder: 1 },
-        ],
-      },
-      {
-        name: "timezone",
-        label: "Timezone",
-        type: "enumeration",
-        fieldType: "select",
-        groupName: "meet_hour",
-        displayOrder: 3,
-        options: [
-          "Etc/GMT+12",
-          "Pacific/Midway",
-          "Pacific/Niue",
-          "America/Adak",
-          "US/Aleutian",
-          "US/Hawaii",
-          "Pacific/Honolulu",
-          "Pacific/Tahiti",
-          "Pacific/Rarotonga",
-          "Pacific/Marquesas",
-          "America/Anchorage",
-          "America/Sitka",
-          "US/Alaska",
-          "America/Nome",
-          "America/Metlakatla",
-          "America/Yakutat",
-          "America/Juneau",
-          "America/Vancouver",
-          "America/Tijuana",
-          "America/Los_Angeles",
-          "Pacific/Pitcairn",
-          "America/Yellowknife",
-          "America/Whitehorse",
-          "America/Inuvik",
-          "America/Phoenix",
-          "Mexico/BajaSur",
-          "America/Hermosillo",
-          "America/Dawson_Creek",
-          "America/Denver",
-          "America/Mazatlan",
-          "America/Ojinaga",
-          "America/Chihuahua",
-          "US/Arizona",
-          "America/Creston",
-          "America/Dawson",
-          "America/Edmonton",
-          "America/Boise",
-          "America/Cambridge_Bay",
-          "Canada/Saskatchewan",
-          "America/Winnipeg",
-          "America/Indiana/Knox",
-          "America/Rainy_River",
-          "America/Rankin_Inlet",
-          "America/Resolute",
-          "America/Indiana/Tell_City",
-          "America/Tegucigalpa",
-          "America/Swift_Current",
-          "America/Regina",
-          "Pacific/Easter",
-          "America/El_Salvador",
-          "America/Costa_Rica",
-          "America/Matamoros",
-          "Pacific/Johnston",
-          "America/North_Dakota/Beulah",
-          "America/North_Dakota/Center",
-          "US/Central",
-          "America/Bahia_Banderas",
-          "America/Mexico_City",
-          "America/Merida",
-          "America/Menominee",
-          "America/North_Dakota/New_Salem",
-          "America/Managua",
-          "Pacific/Galapagos",
-          "America/Guatemala",
-          "Mexico/General",
-          "US/East-Indiana",
-          "America/Belize",
-          "US/Michigan",
-          "America/Indiana/Vincennes",
-          "America/Indiana/Vevay",
-          "America/Toronto",
-          "America/Atikokan",
-          "America/Nipigon",
-          "America/Thunder_Bay",
-          "America/Rio_Branco",
-          "America/Port-au-Prince",
-          "America/Panama",
-          "America/Indiana/Winamac",
-          "America/Indiana/Marengo",
-          "America/New_York",
-          "America/Nassau",
-          "America/Kentucky/Monticello",
-          "America/Monterrey",
-          "America/Kentucky/Louisville",
-          "America/Louisville",
-          "America/Knox_IN",
-          "America/Lima",
-          "America/Jamaica",
-          "US/Eastern",
-          "US/Indiana-Starke",
-          "America/Iqaluit",
-          "America/Indiana/Indianapolis",
-          "America/Indianapolis",
-          "America/Havana",
-          "America/Guayaquil",
-          "America/Cayman",
-          "America/Eirunepe",
-          "America/Detroit",
-          "America/Grand_Turk",
-          "America/Chicago",
-          "America/Cancun",
-          "Atlantic/Bermuda",
-          "America/Curacao",
-          "America/Pangnirtung",
-          "America/Anguilla",
-          "America/Santo_Domingo",
-          "America/Santiago",
-          "America/La_Paz",
-          "America/Puerto_Rico",
-          "America/Antigua",
-          "America/Grenada",
-          "America/St_Thomas",
-          "America/Dominica",
-          "America/Tortola",
-          "America/Porto_Velho",
-          "America/Aruba",
-          "America/Thule",
-          "America/Moncton",
-          "America/Marigot",
-          "America/Manaus",
-          "America/Blanc-Sablon",
-          "America/Guadeloupe",
-          "America/Goose_Bay",
-          "America/Kralendijk",
-          "America/St_Vincent",
-          "America/St_Barthelemy",
-          "America/Guyana",
-          "America/Martinique",
-          "America/Lower_Princes",
-          "America/Cuiaba",
-          "America/Port_of_Spain",
-          "America/St_Lucia",
-          "America/Campo_Grande",
-          "America/Barbados",
-          "America/Montserrat",
-          "America/Bogota",
-          "America/Boa_Vista",
-          "America/St_Kitts",
-          "America/Asuncion",
-          "America/Halifax",
-          "America/Caracas",
-          "America/St_Johns",
-          "Canada/Newfoundland",
-          "America/Argentina/Ushuaia",
-          "America/Sao_Paulo",
-          "America/Santarem",
-          "America/Argentina/Jujuy",
-          "America/Jujuy",
-          "America/Argentina/Tucuman",
-          "America/Argentina/San_Luis",
-          "America/Argentina/San_Juan",
-          "America/Argentina/Catamarca",
-          "America/Bahia",
-          "America/Argentina/Salta",
-          "America/Miquelon",
-          "America/Recife",
-          "America/Paramaribo",
-          "America/Araguaina",
-          "America/Godthab",
-          "America/Montevideo",
-          "America/Argentina/Mendoza",
-          "America/Mendoza",
-          "America/Maceio",
-          "America/Argentina/Buenos_Aires",
-          "America/Buenos_Aires",
-          "America/Belem",
-          "Antarctica/Palmer",
-          "Antarctica/Rothera",
-          "Atlantic/Stanley",
-          "America/Cayenne",
-          "America/Noronha",
-          "Atlantic/South_Georgia",
-          "Atlantic/Azores",
-          "America/Scoresbysund",
-          "Atlantic/Cape_Verde",
-          "America/Danmarkshavn",
-          "Atlantic/St_Helena",
-          "Atlantic/Faeroe",
-          "Etc/Greenwich",
-          "Africa/Abidjan",
-          "Africa/Accra",
-          "Atlantic/Faroe",
-          "Antarctica/Troll",
-          "Africa/Bamako",
-          "Africa/Bissau",
-          "Africa/Conakry",
-          "Africa/Casablanca",
-          "Africa/Dakar",
-          "Europe/Isle_of_Man",
-          "Europe/Dublin",
-          "Africa/Freetown",
-          "Atlantic/Madeira",
-          "Africa/El_Aaiun",
-          "Atlantic/Canary",
-          "Europe/Jersey",
-          "Europe/Lisbon",
-          "Africa/Lome",
-          "Europe/London",
-          "UTC",
-          "Africa/Monrovia",
-          "Africa/Nouakchott",
-          "Africa/Ouagadougou",
-          "Africa/Timbuktu",
-          "Atlantic/Reykjavik",
-          "Europe/Guernsey",
-          "Africa/Sao_Tome",
-          "Europe/Oslo",
-          "Europe/Paris",
-          "Europe/Podgorica",
-          "Europe/Prague",
-          "Europe/Rome",
-          "Europe/Sarajevo",
-          "Europe/San_Marino",
-          "Africa/Algiers",
-          "Europe/Amsterdam",
-          "Europe/Andorra",
-          "Africa/Malabo",
-          "Europe/Belgrade",
-          "Europe/Berlin",
-          "Europe/Malta",
-          "Europe/Bratislava",
-          "Africa/Brazzaville",
-          "Europe/Brussels",
-          "Europe/Budapest",
-          "Africa/Ceuta",
-          "Europe/Copenhagen",
-          "Africa/Porto-Novo",
-          "Africa/Douala",
-          "Europe/Gibraltar",
-          "Africa/Kinshasa",
-          "Africa/Lagos",
-          "Africa/Libreville",
-          "Europe/Ljubljana",
-          "Arctic/Longyearbyen",
-          "Africa/Luanda",
-          "Europe/Luxembourg",
-          "Europe/Madrid",
-          "Europe/Monaco",
-          "Africa/Ndjamena",
-          "Africa/Niamey",
-          "Europe/Vaduz",
-          "Europe/Skopje",
-          "Europe/Stockholm",
-          "Europe/Tirane",
-          "Africa/Tunis",
-          "Europe/Vatican",
-          "Europe/Vienna",
-          "Europe/Warsaw",
-          "Africa/Windhoek",
-          "Europe/Zagreb",
-          "Europe/Zurich",
-          "Africa/Bangui",
-          "Europe/Riga",
-          "Asia/Damascus",
-          "Asia/Amman",
-          "Europe/Athens",
-          "Asia/Beirut",
-          "Europe/Bucharest",
-          "Africa/Bujumbura",
-          "Africa/Cairo",
-          "Africa/Johannesburg",
-          "Europe/Chisinau",
-          "Europe/Tiraspol",
-          "Asia/Hebron",
-          "Africa/Gaborone",
-          "Asia/Gaza",
-          "Africa/Harare",
-          "Europe/Helsinki",
-          "Asia/Jerusalem",
-          "Africa/Juba",
-          "Africa/Khartoum",
-          "Africa/Kigali",
-          "Europe/Kiev",
-          "Europe/Kaliningrad",
-          "Africa/Blantyre",
-          "Africa/Lubumbashi",
-          "Europe/Zaporozhye",
-          "Africa/Lusaka",
-          "Africa/Mbabane",
-          "Africa/Maputo",
-          "Europe/Mariehamn",
-          "Africa/Maseru",
-          "Asia/Nicosia",
-          "Europe/Sofia",
-          "Europe/Tallinn",
-          "Africa/Tripoli",
-          "Europe/Uzhgorod",
-          "Europe/Vilnius",
-          "Africa/Mogadishu",
-          "Europe/Moscow",
-          "Asia/Kuwait",
-          "Indian/Antananarivo",
-          "Antarctica/Syowa",
-          "Africa/Asmara",
-          "Asia/Baghdad",
-          "Africa/Dar_es_Salaam",
-          "Africa/Djibouti",
-          "Asia/Qatar",
-          "Israel",
-          "Europe/Istanbul",
-          "Turkey",
-          "Africa/Kampala",
-          "Indian/Mayotte",
-          "Asia/Bahrain",
-          "Europe/Minsk",
-          "Indian/Comoro",
-          "Africa/Nairobi",
-          "Africa/Addis_Ababa",
-          "Asia/Riyadh",
-          "Asia/Aden",
-          "Europe/Simferopol",
-          "Asia/Istanbul",
-          "Europe/Volgograd",
-          "Asia/Tehran",
-          "Europe/Samara",
-          "Asia/Baku",
-          "Asia/Dubai",
-          "Canada/Atlantic",
-          "Asia/Muscat",
-          "Indian/Mauritius",
-          "Indian/Reunion",
-          "Asia/Tbilisi",
-          "Indian/Mahe",
-          "Asia/Yerevan",
-          "Asia/Kabul",
-          "Asia/Aqtobe",
-          "Antarctica/Mawson",
-          "Asia/Ashgabat",
-          "Asia/Ashkhabad",
-          "Asia/Dushanbe",
-          "Asia/Karachi",
-          "Asia/Qyzylorda",
-          "Indian/Maldives",
-          "Asia/Oral",
-          "Asia/Aqtau",
-          "Asia/Tashkent",
-          "Asia/Yekaterinburg",
-          "Asia/Colombo",
-          "Asia/Dacca",
-          "Asia/Calcutta",
-          "Asia/Kolkata",
-          "Asia/Katmandu",
-          "Asia/Kathmandu",
-          "Asia/Almaty",
-          "Antarctica/Vostok",
-          "Asia/Bishkek",
-          "Indian/Chagos",
-          "Asia/Dhaka",
-          "Asia/Omsk",
-          "Asia/Thimbu",
-          "Asia/Thimphu",
-          "Asia/Urumqi",
-          "Indian/Cocos",
-          "Asia/Rangoon",
-          "Antarctica/Casey",
-          "Antarctica/Davis",
-          "Asia/Bangkok",
-          "Indian/Christmas",
-          "Asia/Ho_Chi_Minh",
-          "Asia/Jakarta",
-          "Asia/Hovd",
-          "Asia/Krasnoyarsk",
-          "Asia/Novokuznetsk",
-          "Asia/Novosibirsk",
-          "Asia/Phnom_Penh",
-          "US/Mountain",
-          "Asia/Pontianak",
-          "Asia/Vientiane",
-          "Asia/Brunei",
-          "Asia/Choibalsan",
-          "Asia/Hong_Kong",
-          "Asia/Irkutsk",
-          "Asia/Kuala_Lumpur",
-          "Asia/Shanghai",
-          "Asia/Kuching",
-          "US/Pacific",
-          "Asia/Macao",
-          "Asia/Macau",
-          "Asia/Makassar",
-          "Australia/Perth",
-          "Asia/Manila",
-          "Singapore",
-          "Asia/Singapore",
-          "Australia/Sydney",
-          "Asia/Taipei",
-          "Asia/Ulaanbaatar",
-          "Australia/Eucla",
-          "Asia/Jayapura",
-          "Asia/Chita",
-          "Asia/Dili",
-          "Pacific/Palau",
-          "Asia/Khandyga",
-          "Asia/Pyongyang",
-          "Asia/Seoul",
-          "Asia/Tokyo",
-          "Asia/Yakutsk",
-          "Australia/Broken_Hill",
-          "Australia/Adelaide",
-          "Australia/Darwin",
-          "Australia/Lindeman",
-          "Australia/Brisbane",
-          "Australia/Canberra",
-          "Antarctica/DumontDUrville",
-          "Pacific/Yap",
-          "Pacific/Guam",
-          "Australia/Hobart",
-          "Pacific/Port_Moresby",
-          "Pacific/Saipan",
-          "Australia/Currie",
-          "Antarctica/Macquarie",
-          "Asia/Vladivostok",
-          "Pacific/Chuuk",
-          "Australia/Lord_Howe",
-          "Australia/LHI",
-          "Pacific/Guadalcanal",
-          "Pacific/Gambier",
-          "Pacific/Norfolk",
-          "Pacific/Pohnpei",
-          "Asia/Magadan",
-          "Asia/Srednekolymsk",
-          "Pacific/Noumea",
-          "Pacific/Pago_Pago",
-          "Pacific/Bougainville",
-          "Pacific/Efate",
-          "Pacific/Kosrae",
-          "Asia/Sakhalin",
-          "Asia/Anadyr",
-          "Antarctica/McMurdo",
-          "Pacific/Auckland",
-          "Kwajalein",
-          "Pacific/Funafuti",
-          "Pacific/Kwajalein",
-          "Pacific/Majuro",
-          "Pacific/Wallis",
-          "Asia/Kamchatka",
-          "Pacific/Fiji",
-          "Pacific/Tarawa",
-          "Pacific/Wake",
-          "Pacific/Nauru",
-          "Pacific/Chatham",
-          "Pacific/Apia",
-          "Pacific/Samoa",
-          "Pacific/Fakaofo",
-          "Pacific/Tongatapu",
-          "Pacific/Enderbury",
-          "Pacific/Kiritimati",
-        ].map((tz, index) => ({ label: tz, value: tz, displayOrder: index })),
-      },
-    ];
-
-    for (const prop of dealProperties) {
-      try {
-        await axios.post(
-          "https://api.hubapi.com/crm/v3/properties/deals",
-          prop,
-          {
-            headers: {
-              Authorization: `Bearer ${hubspotAccessToken}`,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-        console.log("Deal property created:", prop.name);
-      } catch (err) {
-        console.log(
-          "Deal property skipped (may exist):",
-          prop.name,
-          err.response?.data?.message,
-        );
-      }
-    }
-
-    // Creating Contact Properties For Form on installation
-    const contactProperties = [
-      {
-        name: "meeting_name",
-        label: "Meeting Name",
-        type: "string",
-        fieldType: "text",
-        groupName: "contactinformation",
-        displayOrder: 0,
-      },
-      {
-        name: "meeting_date",
-        label: "Meeting Date",
-        type: "date",
-        fieldType: "date",
-        groupName: "contactinformation",
-        displayOrder: 1,
-      },
-      {
-        name: "meeting_time",
-        label: "Meeting Time",
-        type: "enumeration",
-        fieldType: "select",
-        groupName: "contactinformation",
-        displayOrder: 2,
-        options: [
-          { label: "12:00", value: "12:00", displayOrder: 0 },
-          { label: "12:30", value: "12:30", displayOrder: 1 },
-          { label: "01:00", value: "01:00", displayOrder: 2 },
-          { label: "01:30", value: "01:30", displayOrder: 3 },
-          { label: "02:00", value: "02:00", displayOrder: 4 },
-          { label: "02:30", value: "02:30", displayOrder: 5 },
-          { label: "03:00", value: "03:00", displayOrder: 6 },
-          { label: "03:30", value: "03:30", displayOrder: 7 },
-          { label: "04:00", value: "04:00", displayOrder: 8 },
-          { label: "04:30", value: "04:30", displayOrder: 9 },
-          { label: "05:00", value: "05:00", displayOrder: 10 },
-          { label: "05:30", value: "05:30", displayOrder: 11 },
-          { label: "06:00", value: "06:00", displayOrder: 12 },
-          { label: "06:30", value: "06:30", displayOrder: 13 },
-          { label: "07:00", value: "07:00", displayOrder: 14 },
-          { label: "07:30", value: "07:30", displayOrder: 15 },
-          { label: "08:00", value: "08:00", displayOrder: 16 },
-          { label: "08:30", value: "08:30", displayOrder: 17 },
-          { label: "09:00", value: "09:00", displayOrder: 18 },
-          { label: "09:30", value: "09:30", displayOrder: 19 },
-          { label: "10:00", value: "10:00", displayOrder: 20 },
-          { label: "10:30", value: "10:30", displayOrder: 21 },
-          { label: "11:00", value: "11:00", displayOrder: 22 },
-          { label: "11:30", value: "11:30", displayOrder: 23 },
-        ],
-      },
-      {
-        name: "meeting_meridiem",
-        label: "Meeting Meridiem",
-        type: "enumeration",
-        fieldType: "select",
-        groupName: "contactinformation",
-        displayOrder: 3,
-        options: [
-          { label: "AM", value: "AM", displayOrder: 0 },
-          { label: "PM", value: "PM", displayOrder: 1 },
-        ],
-      },
-      {
-        name: "timezone",
-        label: "Timezone",
-        type: "enumeration",
-        fieldType: "select",
-        groupName: "contactinformation",
-        displayOrder: 4,
-        options: [
-          "Etc/GMT+12",
-          "Pacific/Midway",
-          "Pacific/Niue",
-          "America/Adak",
-          "US/Aleutian",
-          "US/Hawaii",
-          "Pacific/Honolulu",
-          "Pacific/Tahiti",
-          "Pacific/Rarotonga",
-          "Pacific/Marquesas",
-          "America/Anchorage",
-          "America/Sitka",
-          "US/Alaska",
-          "America/Nome",
-          "America/Metlakatla",
-          "America/Yakutat",
-          "America/Juneau",
-          "America/Vancouver",
-          "America/Tijuana",
-          "America/Los_Angeles",
-          "Pacific/Pitcairn",
-          "America/Yellowknife",
-          "America/Whitehorse",
-          "America/Inuvik",
-          "America/Phoenix",
-          "Mexico/BajaSur",
-          "America/Hermosillo",
-          "America/Dawson_Creek",
-          "America/Denver",
-          "America/Mazatlan",
-          "America/Ojinaga",
-          "America/Chihuahua",
-          "US/Arizona",
-          "America/Creston",
-          "America/Dawson",
-          "America/Edmonton",
-          "America/Boise",
-          "America/Cambridge_Bay",
-          "Canada/Saskatchewan",
-          "America/Winnipeg",
-          "America/Indiana/Knox",
-          "America/Rainy_River",
-          "America/Rankin_Inlet",
-          "America/Resolute",
-          "America/Indiana/Tell_City",
-          "America/Tegucigalpa",
-          "America/Swift_Current",
-          "America/Regina",
-          "Pacific/Easter",
-          "America/El_Salvador",
-          "America/Costa_Rica",
-          "America/Matamoros",
-          "Pacific/Johnston",
-          "America/North_Dakota/Beulah",
-          "America/North_Dakota/Center",
-          "US/Central",
-          "America/Bahia_Banderas",
-          "America/Mexico_City",
-          "America/Merida",
-          "America/Menominee",
-          "America/North_Dakota/New_Salem",
-          "America/Managua",
-          "Pacific/Galapagos",
-          "America/Guatemala",
-          "Mexico/General",
-          "US/East-Indiana",
-          "America/Belize",
-          "US/Michigan",
-          "America/Indiana/Vincennes",
-          "America/Indiana/Vevay",
-          "America/Toronto",
-          "America/Atikokan",
-          "America/Nipigon",
-          "America/Thunder_Bay",
-          "America/Rio_Branco",
-          "America/Port-au-Prince",
-          "America/Panama",
-          "America/Indiana/Winamac",
-          "America/Indiana/Marengo",
-          "America/New_York",
-          "America/Nassau",
-          "America/Kentucky/Monticello",
-          "America/Monterrey",
-          "America/Kentucky/Louisville",
-          "America/Louisville",
-          "America/Knox_IN",
-          "America/Lima",
-          "America/Jamaica",
-          "US/Eastern",
-          "US/Indiana-Starke",
-          "America/Iqaluit",
-          "America/Indiana/Indianapolis",
-          "America/Indianapolis",
-          "America/Havana",
-          "America/Guayaquil",
-          "America/Cayman",
-          "America/Eirunepe",
-          "America/Detroit",
-          "America/Grand_Turk",
-          "America/Chicago",
-          "America/Cancun",
-          "Atlantic/Bermuda",
-          "America/Curacao",
-          "America/Pangnirtung",
-          "America/Anguilla",
-          "America/Santo_Domingo",
-          "America/Santiago",
-          "America/La_Paz",
-          "America/Puerto_Rico",
-          "America/Antigua",
-          "America/Grenada",
-          "America/St_Thomas",
-          "America/Dominica",
-          "America/Tortola",
-          "America/Porto_Velho",
-          "America/Aruba",
-          "America/Thule",
-          "America/Moncton",
-          "America/Marigot",
-          "America/Manaus",
-          "America/Blanc-Sablon",
-          "America/Guadeloupe",
-          "America/Goose_Bay",
-          "America/Kralendijk",
-          "America/St_Vincent",
-          "America/St_Barthelemy",
-          "America/Guyana",
-          "America/Martinique",
-          "America/Lower_Princes",
-          "America/Cuiaba",
-          "America/Port_of_Spain",
-          "America/St_Lucia",
-          "America/Campo_Grande",
-          "America/Barbados",
-          "America/Montserrat",
-          "America/Bogota",
-          "America/Boa_Vista",
-          "America/St_Kitts",
-          "America/Asuncion",
-          "America/Halifax",
-          "America/Caracas",
-          "America/St_Johns",
-          "Canada/Newfoundland",
-          "America/Argentina/Ushuaia",
-          "America/Sao_Paulo",
-          "America/Santarem",
-          "America/Argentina/Jujuy",
-          "America/Jujuy",
-          "America/Argentina/Tucuman",
-          "America/Argentina/San_Luis",
-          "America/Argentina/San_Juan",
-          "America/Argentina/Catamarca",
-          "America/Bahia",
-          "America/Argentina/Salta",
-          "America/Miquelon",
-          "America/Recife",
-          "America/Paramaribo",
-          "America/Araguaina",
-          "America/Godthab",
-          "America/Montevideo",
-          "America/Argentina/Mendoza",
-          "America/Mendoza",
-          "America/Maceio",
-          "America/Argentina/Buenos_Aires",
-          "America/Buenos_Aires",
-          "America/Belem",
-          "Antarctica/Palmer",
-          "Antarctica/Rothera",
-          "Atlantic/Stanley",
-          "America/Cayenne",
-          "America/Noronha",
-          "Atlantic/South_Georgia",
-          "Atlantic/Azores",
-          "America/Scoresbysund",
-          "Atlantic/Cape_Verde",
-          "America/Danmarkshavn",
-          "Atlantic/St_Helena",
-          "Atlantic/Faeroe",
-          "Etc/Greenwich",
-          "Africa/Abidjan",
-          "Africa/Accra",
-          "Atlantic/Faroe",
-          "Antarctica/Troll",
-          "Africa/Bamako",
-          "Africa/Bissau",
-          "Africa/Conakry",
-          "Africa/Casablanca",
-          "Africa/Dakar",
-          "Europe/Isle_of_Man",
-          "Europe/Dublin",
-          "Africa/Freetown",
-          "Atlantic/Madeira",
-          "Africa/El_Aaiun",
-          "Atlantic/Canary",
-          "Europe/Jersey",
-          "Europe/Lisbon",
-          "Africa/Lome",
-          "Europe/London",
-          "UTC",
-          "Africa/Monrovia",
-          "Africa/Nouakchott",
-          "Africa/Ouagadougou",
-          "Africa/Timbuktu",
-          "Atlantic/Reykjavik",
-          "Europe/Guernsey",
-          "Africa/Sao_Tome",
-          "Europe/Oslo",
-          "Europe/Paris",
-          "Europe/Podgorica",
-          "Europe/Prague",
-          "Europe/Rome",
-          "Europe/Sarajevo",
-          "Europe/San_Marino",
-          "Africa/Algiers",
-          "Europe/Amsterdam",
-          "Europe/Andorra",
-          "Africa/Malabo",
-          "Europe/Belgrade",
-          "Europe/Berlin",
-          "Europe/Malta",
-          "Europe/Bratislava",
-          "Africa/Brazzaville",
-          "Europe/Brussels",
-          "Europe/Budapest",
-          "Africa/Ceuta",
-          "Europe/Copenhagen",
-          "Africa/Porto-Novo",
-          "Africa/Douala",
-          "Europe/Gibraltar",
-          "Africa/Kinshasa",
-          "Africa/Lagos",
-          "Africa/Libreville",
-          "Europe/Ljubljana",
-          "Arctic/Longyearbyen",
-          "Africa/Luanda",
-          "Europe/Luxembourg",
-          "Europe/Madrid",
-          "Europe/Monaco",
-          "Africa/Ndjamena",
-          "Africa/Niamey",
-          "Europe/Vaduz",
-          "Europe/Skopje",
-          "Europe/Stockholm",
-          "Europe/Tirane",
-          "Africa/Tunis",
-          "Europe/Vatican",
-          "Europe/Vienna",
-          "Europe/Warsaw",
-          "Africa/Windhoek",
-          "Europe/Zagreb",
-          "Europe/Zurich",
-          "Africa/Bangui",
-          "Europe/Riga",
-          "Asia/Damascus",
-          "Asia/Amman",
-          "Europe/Athens",
-          "Asia/Beirut",
-          "Europe/Bucharest",
-          "Africa/Bujumbura",
-          "Africa/Cairo",
-          "Africa/Johannesburg",
-          "Europe/Chisinau",
-          "Europe/Tiraspol",
-          "Asia/Hebron",
-          "Africa/Gaborone",
-          "Asia/Gaza",
-          "Africa/Harare",
-          "Europe/Helsinki",
-          "Asia/Jerusalem",
-          "Africa/Juba",
-          "Africa/Khartoum",
-          "Africa/Kigali",
-          "Europe/Kiev",
-          "Europe/Kaliningrad",
-          "Africa/Blantyre",
-          "Africa/Lubumbashi",
-          "Europe/Zaporozhye",
-          "Africa/Lusaka",
-          "Africa/Mbabane",
-          "Africa/Maputo",
-          "Europe/Mariehamn",
-          "Africa/Maseru",
-          "Asia/Nicosia",
-          "Europe/Sofia",
-          "Europe/Tallinn",
-          "Africa/Tripoli",
-          "Europe/Uzhgorod",
-          "Europe/Vilnius",
-          "Africa/Mogadishu",
-          "Europe/Moscow",
-          "Asia/Kuwait",
-          "Indian/Antananarivo",
-          "Antarctica/Syowa",
-          "Africa/Asmara",
-          "Asia/Baghdad",
-          "Africa/Dar_es_Salaam",
-          "Africa/Djibouti",
-          "Asia/Qatar",
-          "Israel",
-          "Europe/Istanbul",
-          "Turkey",
-          "Africa/Kampala",
-          "Indian/Mayotte",
-          "Asia/Bahrain",
-          "Europe/Minsk",
-          "Indian/Comoro",
-          "Africa/Nairobi",
-          "Africa/Addis_Ababa",
-          "Asia/Riyadh",
-          "Asia/Aden",
-          "Europe/Simferopol",
-          "Asia/Istanbul",
-          "Europe/Volgograd",
-          "Asia/Tehran",
-          "Europe/Samara",
-          "Asia/Baku",
-          "Asia/Dubai",
-          "Canada/Atlantic",
-          "Asia/Muscat",
-          "Indian/Mauritius",
-          "Indian/Reunion",
-          "Asia/Tbilisi",
-          "Indian/Mahe",
-          "Asia/Yerevan",
-          "Asia/Kabul",
-          "Asia/Aqtobe",
-          "Antarctica/Mawson",
-          "Asia/Ashgabat",
-          "Asia/Ashkhabad",
-          "Asia/Dushanbe",
-          "Asia/Karachi",
-          "Asia/Qyzylorda",
-          "Indian/Maldives",
-          "Asia/Oral",
-          "Asia/Aqtau",
-          "Asia/Tashkent",
-          "Asia/Yekaterinburg",
-          "Asia/Colombo",
-          "Asia/Dacca",
-          "Asia/Calcutta",
-          "Asia/Kolkata",
-          "Asia/Katmandu",
-          "Asia/Kathmandu",
-          "Asia/Almaty",
-          "Antarctica/Vostok",
-          "Asia/Bishkek",
-          "Indian/Chagos",
-          "Asia/Dhaka",
-          "Asia/Omsk",
-          "Asia/Thimbu",
-          "Asia/Thimphu",
-          "Asia/Urumqi",
-          "Indian/Cocos",
-          "Asia/Rangoon",
-          "Antarctica/Casey",
-          "Antarctica/Davis",
-          "Asia/Bangkok",
-          "Indian/Christmas",
-          "Asia/Ho_Chi_Minh",
-          "Asia/Jakarta",
-          "Asia/Hovd",
-          "Asia/Krasnoyarsk",
-          "Asia/Novokuznetsk",
-          "Asia/Novosibirsk",
-          "Asia/Phnom_Penh",
-          "US/Mountain",
-          "Asia/Pontianak",
-          "Asia/Vientiane",
-          "Asia/Brunei",
-          "Asia/Choibalsan",
-          "Asia/Hong_Kong",
-          "Asia/Irkutsk",
-          "Asia/Kuala_Lumpur",
-          "Asia/Shanghai",
-          "Asia/Kuching",
-          "US/Pacific",
-          "Asia/Macao",
-          "Asia/Macau",
-          "Asia/Makassar",
-          "Australia/Perth",
-          "Asia/Manila",
-          "Singapore",
-          "Asia/Singapore",
-          "Australia/Sydney",
-          "Asia/Taipei",
-          "Asia/Ulaanbaatar",
-          "Australia/Eucla",
-          "Asia/Jayapura",
-          "Asia/Chita",
-          "Asia/Dili",
-          "Pacific/Palau",
-          "Asia/Khandyga",
-          "Asia/Pyongyang",
-          "Asia/Seoul",
-          "Asia/Tokyo",
-          "Asia/Yakutsk",
-          "Australia/Broken_Hill",
-          "Australia/Adelaide",
-          "Australia/Darwin",
-          "Australia/Lindeman",
-          "Australia/Brisbane",
-          "Australia/Canberra",
-          "Antarctica/DumontDUrville",
-          "Pacific/Yap",
-          "Pacific/Guam",
-          "Australia/Hobart",
-          "Pacific/Port_Moresby",
-          "Pacific/Saipan",
-          "Australia/Currie",
-          "Antarctica/Macquarie",
-          "Asia/Vladivostok",
-          "Pacific/Chuuk",
-          "Australia/Lord_Howe",
-          "Australia/LHI",
-          "Pacific/Guadalcanal",
-          "Pacific/Gambier",
-          "Pacific/Norfolk",
-          "Pacific/Pohnpei",
-          "Asia/Magadan",
-          "Asia/Srednekolymsk",
-          "Pacific/Noumea",
-          "Pacific/Pago_Pago",
-          "Pacific/Bougainville",
-          "Pacific/Efate",
-          "Pacific/Kosrae",
-          "Asia/Sakhalin",
-          "Asia/Anadyr",
-          "Antarctica/McMurdo",
-          "Pacific/Auckland",
-          "Kwajalein",
-          "Pacific/Funafuti",
-          "Pacific/Kwajalein",
-          "Pacific/Majuro",
-          "Pacific/Wallis",
-          "Asia/Kamchatka",
-          "Pacific/Fiji",
-          "Pacific/Tarawa",
-          "Pacific/Wake",
-          "Pacific/Nauru",
-          "Pacific/Chatham",
-          "Pacific/Apia",
-          "Pacific/Samoa",
-          "Pacific/Fakaofo",
-          "Pacific/Tongatapu",
-          "Pacific/Enderbury",
-          "Pacific/Kiritimati",
-        ].map((tz, index) => ({ label: tz, value: tz, displayOrder: index })),
-      },
-    ];
-
-    for (const prop of contactProperties) {
-      try {
-        await axios.post(
-          "https://api.hubapi.com/crm/v3/properties/contacts",
-          prop,
-          {
-            headers: {
-              Authorization: `Bearer ${hubspotAccessToken}`,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-        console.log("Contact property created:", prop.name);
-      } catch (err) {
-        console.log(
-          "Contact property skipped",
-          prop.name,
-          err.response?.data?.message,
-        );
-      }
-    }
-
-    // Creating Form
-    let formId = null;
-    try {
-      formRes = await axios.post(
-        "https://api.hubapi.com/marketing/v3/forms",
-        {
-          name: "MeetHour Meeting Scheduler",
-          formType: "hubspot",
-          archived: false,
-          createdAt: new Date().toISOString(),
-          configuration: {
-            allowLinkToResetKnownValues: false,
-            archivable: true,
-            cloneable: false,
-            createNewContactForNewEmail: true,
-            editable: true,
-            recaptchaEnabled: false,
-            notifyContactOwner: false,
-            prePopulateKnownValues: true,
-            language: "en",
-            notifyRecipients: [],
-            postSubmitAction: {
-              type: "thank_you",
-              value: "Thank you! Your meeting has been scheduled.",
-            },
-            lifecycleStages: [],
-          },
-          displayOptions: {
-            renderRawHtml: false,
-            submitButtonText: "Schedule Meeting",
-            theme: "default_style",
-            style: {
-              backgroundWidth: "100%",
-              fontFamily: "Arial",
-              helpTextColor: "#7C98B6",
-              helpTextSize: "14px",
-              labelTextColor: "#33475B",
-              labelTextSize: "14px",
-              legalConsentTextColor: "#33475B",
-              legalConsentTextSize: "14px",
-              submitAlignment: "left",
-              submitColor: "#FF7A59",
-              submitFontColor: "#FFFFFF",
-              submitSize: "12px",
-            },
-          },
-          fieldGroups: [
-            {
-              fields: [
-                {
-                  name: "firstname",
-                  label: "First Name",
-                  objectTypeId: "0-1",
-                  fieldType: "single_line_text",
-                  required: true,
-                  hidden: false,
-                  dependentFields: [],
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-            {
-              fields: [
-                {
-                  name: "lastname",
-                  label: "Last Name",
-                  objectTypeId: "0-1",
-                  fieldType: "single_line_text",
-                  required: true,
-                  hidden: false,
-                  dependentFields: [],
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-            {
-              fields: [
-                {
-                  name: "email",
-                  label: "Email",
-                  objectTypeId: "0-1",
-                  fieldType: "email",
-                  required: true,
-                  hidden: false,
-                  dependentFields: [],
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-            {
-              fields: [
-                {
-                  name: "meeting_name",
-                  label: "Meeting Name",
-                  objectTypeId: "0-1",
-                  fieldType: "single_line_text",
-                  required: true,
-                  hidden: false,
-                  dependentFields: [],
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-            {
-              fields: [
-                {
-                  name: "meeting_date",
-                  label: "Meeting Date",
-                  objectTypeId: "0-1",
-                  fieldType: "date",
-                  required: true,
-                  fieldType: "datepicker",
-                  hidden: false,
-                  dependentFields: [],
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-            {
-              fields: [
-                {
-                  name: "meeting_time",
-                  label: "Meeting Time",
-                  objectTypeId: "0-1",
-                  fieldType: "dropdown",
-                  required: true,
-                  hidden: false,
-                  dependentFields: [],
-                  options: [
-                    { label: "12:00", value: "12:00", displayOrder: 0 },
-                    { label: "12:30", value: "12:30", displayOrder: 1 },
-                    { label: "01:00", value: "01:00", displayOrder: 2 },
-                    { label: "01:30", value: "01:30", displayOrder: 3 },
-                    { label: "02:00", value: "02:00", displayOrder: 4 },
-                    { label: "02:30", value: "02:30", displayOrder: 5 },
-                    { label: "03:00", value: "03:00", displayOrder: 6 },
-                    { label: "03:30", value: "03:30", displayOrder: 8 },
-                    { label: "04:00", value: "04:00", displayOrder: 9 },
-                    { label: "04:30", value: "04:30", displayOrder: 10 },
-                    { label: "05:00", value: "05:00", displayOrder: 11 },
-                    { label: "05:30", value: "05:30", displayOrder: 12 },
-                    { label: "06:00", value: "06:00", displayOrder: 13 },
-                    { label: "06:30", value: "06:30", displayOrder: 14 },
-                    { label: "07:00", value: "07:00", displayOrder: 15 },
-                    { label: "07:30", value: "07:30", displayOrder: 16 },
-                    { label: "08:00", value: "08:00", displayOrder: 17 },
-                    { label: "08:30", value: "08:30", displayOrder: 18 },
-                    { label: "09:00", value: "09:00", displayOrder: 19 },
-                    { label: "09:30", value: "09:30", displayOrder: 20 },
-                    { label: "10:00", value: "10:00", displayOrder: 21 },
-                    { label: "10:30", value: "10:30", displayOrder: 22 },
-                    { label: "11:00", value: "11:00", displayOrder: 23 },
-                    { label: "11:30", value: "11:30", displayOrder: 24 },
-                  ],
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-            {
-              fields: [
-                {
-                  name: "meeting_meridiem",
-                  label: "AM/PM",
-                  objectTypeId: "0-1",
-                  fieldType: "dropdown",
-                  required: true,
-                  hidden: false,
-                  dependentFields: [],
-                  options: [
-                    { label: "AM", value: "AM", displayOrder: 0 },
-                    { label: "PM", value: "PM", displayOrder: 1 },
-                  ],
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-            {
-              fields: [
-                {
-                  name: "timezone",
-                  label: "Timezone",
-                  objectTypeId: "0-1",
-                  fieldType: "dropdown",
-                  required: true,
-                  hidden: false,
-                  dependentFields: [],
-                  options: [
-                    "Etc/GMT+12",
-                    "Pacific/Midway",
-                    "Pacific/Niue",
-                    "America/Adak",
-                    "US/Aleutian",
-                    "US/Hawaii",
-                    "Pacific/Honolulu",
-                    "Pacific/Tahiti",
-                    "Pacific/Rarotonga",
-                    "Pacific/Marquesas",
-                    "America/Anchorage",
-                    "America/Sitka",
-                    "US/Alaska",
-                    "America/Nome",
-                    "America/Metlakatla",
-                    "America/Yakutat",
-                    "America/Juneau",
-                    "America/Vancouver",
-                    "America/Tijuana",
-                    "America/Los_Angeles",
-                    "Pacific/Pitcairn",
-                    "America/Yellowknife",
-                    "America/Whitehorse",
-                    "America/Inuvik",
-                    "America/Phoenix",
-                    "Mexico/BajaSur",
-                    "America/Hermosillo",
-                    "America/Dawson_Creek",
-                    "America/Denver",
-                    "America/Mazatlan",
-                    "America/Ojinaga",
-                    "America/Chihuahua",
-                    "US/Arizona",
-                    "America/Creston",
-                    "America/Dawson",
-                    "America/Edmonton",
-                    "America/Boise",
-                    "America/Cambridge_Bay",
-                    "Canada/Saskatchewan",
-                    "America/Winnipeg",
-                    "America/Indiana/Knox",
-                    "America/Rainy_River",
-                    "America/Rankin_Inlet",
-                    "America/Resolute",
-                    "America/Indiana/Tell_City",
-                    "America/Tegucigalpa",
-                    "America/Swift_Current",
-                    "America/Regina",
-                    "Pacific/Easter",
-                    "America/El_Salvador",
-                    "America/Costa_Rica",
-                    "America/Matamoros",
-                    "Pacific/Johnston",
-                    "America/North_Dakota/Beulah",
-                    "America/North_Dakota/Center",
-                    "US/Central",
-                    "America/Bahia_Banderas",
-                    "America/Mexico_City",
-                    "America/Merida",
-                    "America/Menominee",
-                    "America/North_Dakota/New_Salem",
-                    "America/Managua",
-                    "Pacific/Galapagos",
-                    "America/Guatemala",
-                    "Mexico/General",
-                    "US/East-Indiana",
-                    "America/Belize",
-                    "US/Michigan",
-                    "America/Indiana/Vincennes",
-                    "America/Indiana/Vevay",
-                    "America/Toronto",
-                    "America/Atikokan",
-                    "America/Nipigon",
-                    "America/Thunder_Bay",
-                    "America/Rio_Branco",
-                    "America/Port-au-Prince",
-                    "America/Panama",
-                    "America/Indiana/Winamac",
-                    "America/Indiana/Marengo",
-                    "America/New_York",
-                    "America/Nassau",
-                    "America/Kentucky/Monticello",
-                    "America/Monterrey",
-                    "America/Kentucky/Louisville",
-                    "America/Louisville",
-                    "America/Knox_IN",
-                    "America/Lima",
-                    "America/Jamaica",
-                    "US/Eastern",
-                    "US/Indiana-Starke",
-                    "America/Iqaluit",
-                    "America/Indiana/Indianapolis",
-                    "America/Indianapolis",
-                    "America/Havana",
-                    "America/Guayaquil",
-                    "America/Cayman",
-                    "America/Eirunepe",
-                    "America/Detroit",
-                    "America/Grand_Turk",
-                    "America/Chicago",
-                    "America/Cancun",
-                    "Atlantic/Bermuda",
-                    "America/Curacao",
-                    "America/Pangnirtung",
-                    "America/Anguilla",
-                    "America/Santo_Domingo",
-                    "America/Santiago",
-                    "America/La_Paz",
-                    "America/Puerto_Rico",
-                    "America/Antigua",
-                    "America/Grenada",
-                    "America/St_Thomas",
-                    "America/Dominica",
-                    "America/Tortola",
-                    "America/Porto_Velho",
-                    "America/Aruba",
-                    "America/Thule",
-                    "America/Moncton",
-                    "America/Marigot",
-                    "America/Manaus",
-                    "America/Blanc-Sablon",
-                    "America/Guadeloupe",
-                    "America/Goose_Bay",
-                    "America/Kralendijk",
-                    "America/St_Vincent",
-                    "America/St_Barthelemy",
-                    "America/Guyana",
-                    "America/Martinique",
-                    "America/Lower_Princes",
-                    "America/Cuiaba",
-                    "America/Port_of_Spain",
-                    "America/St_Lucia",
-                    "America/Campo_Grande",
-                    "America/Barbados",
-                    "America/Montserrat",
-                    "America/Bogota",
-                    "America/Boa_Vista",
-                    "America/St_Kitts",
-                    "America/Asuncion",
-                    "America/Halifax",
-                    "America/Caracas",
-                    "America/St_Johns",
-                    "Canada/Newfoundland",
-                    "America/Argentina/Ushuaia",
-                    "America/Sao_Paulo",
-                    "America/Santarem",
-                    "America/Argentina/Jujuy",
-                    "America/Jujuy",
-                    "America/Argentina/Tucuman",
-                    "America/Argentina/San_Luis",
-                    "America/Argentina/San_Juan",
-                    "America/Argentina/Catamarca",
-                    "America/Bahia",
-                    "America/Argentina/Salta",
-                    "America/Miquelon",
-                    "America/Recife",
-                    "America/Paramaribo",
-                    "America/Araguaina",
-                    "America/Godthab",
-                    "America/Montevideo",
-                    "America/Argentina/Mendoza",
-                    "America/Mendoza",
-                    "America/Maceio",
-                    "America/Argentina/Buenos_Aires",
-                    "America/Buenos_Aires",
-                    "America/Belem",
-                    "Antarctica/Palmer",
-                    "Antarctica/Rothera",
-                    "Atlantic/Stanley",
-                    "America/Cayenne",
-                    "America/Noronha",
-                    "Atlantic/South_Georgia",
-                    "Atlantic/Azores",
-                    "America/Scoresbysund",
-                    "Atlantic/Cape_Verde",
-                    "America/Danmarkshavn",
-                    "Atlantic/St_Helena",
-                    "Atlantic/Faeroe",
-                    "Etc/Greenwich",
-                    "Africa/Abidjan",
-                    "Africa/Accra",
-                    "Atlantic/Faroe",
-                    "Antarctica/Troll",
-                    "Africa/Bamako",
-                    "Africa/Bissau",
-                    "Africa/Conakry",
-                    "Africa/Casablanca",
-                    "Africa/Dakar",
-                    "Europe/Isle_of_Man",
-                    "Europe/Dublin",
-                    "Africa/Freetown",
-                    "Atlantic/Madeira",
-                    "Africa/El_Aaiun",
-                    "Atlantic/Canary",
-                    "Europe/Jersey",
-                    "Europe/Lisbon",
-                    "Africa/Lome",
-                    "Europe/London",
-                    "UTC",
-                    "Africa/Monrovia",
-                    "Africa/Nouakchott",
-                    "Africa/Ouagadougou",
-                    "Africa/Timbuktu",
-                    "Atlantic/Reykjavik",
-                    "Europe/Guernsey",
-                    "Africa/Sao_Tome",
-                    "Europe/Oslo",
-                    "Europe/Paris",
-                    "Europe/Podgorica",
-                    "Europe/Prague",
-                    "Europe/Rome",
-                    "Europe/Sarajevo",
-                    "Europe/San_Marino",
-                    "Africa/Algiers",
-                    "Europe/Amsterdam",
-                    "Europe/Andorra",
-                    "Africa/Malabo",
-                    "Europe/Belgrade",
-                    "Europe/Berlin",
-                    "Europe/Malta",
-                    "Europe/Bratislava",
-                    "Africa/Brazzaville",
-                    "Europe/Brussels",
-                    "Europe/Budapest",
-                    "Africa/Ceuta",
-                    "Europe/Copenhagen",
-                    "Africa/Porto-Novo",
-                    "Africa/Douala",
-                    "Europe/Gibraltar",
-                    "Africa/Kinshasa",
-                    "Africa/Lagos",
-                    "Africa/Libreville",
-                    "Europe/Ljubljana",
-                    "Arctic/Longyearbyen",
-                    "Africa/Luanda",
-                    "Europe/Luxembourg",
-                    "Europe/Madrid",
-                    "Europe/Monaco",
-                    "Africa/Ndjamena",
-                    "Africa/Niamey",
-                    "Europe/Vaduz",
-                    "Europe/Skopje",
-                    "Europe/Stockholm",
-                    "Europe/Tirane",
-                    "Africa/Tunis",
-                    "Europe/Vatican",
-                    "Europe/Vienna",
-                    "Europe/Warsaw",
-                    "Africa/Windhoek",
-                    "Europe/Zagreb",
-                    "Europe/Zurich",
-                    "Africa/Bangui",
-                    "Europe/Riga",
-                    "Asia/Damascus",
-                    "Asia/Amman",
-                    "Europe/Athens",
-                    "Asia/Beirut",
-                    "Europe/Bucharest",
-                    "Africa/Bujumbura",
-                    "Africa/Cairo",
-                    "Africa/Johannesburg",
-                    "Europe/Chisinau",
-                    "Europe/Tiraspol",
-                    "Asia/Hebron",
-                    "Africa/Gaborone",
-                    "Asia/Gaza",
-                    "Africa/Harare",
-                    "Europe/Helsinki",
-                    "Asia/Jerusalem",
-                    "Africa/Juba",
-                    "Africa/Khartoum",
-                    "Africa/Kigali",
-                    "Europe/Kiev",
-                    "Europe/Kaliningrad",
-                    "Africa/Blantyre",
-                    "Africa/Lubumbashi",
-                    "Europe/Zaporozhye",
-                    "Africa/Lusaka",
-                    "Africa/Mbabane",
-                    "Africa/Maputo",
-                    "Europe/Mariehamn",
-                    "Africa/Maseru",
-                    "Asia/Nicosia",
-                    "Europe/Sofia",
-                    "Europe/Tallinn",
-                    "Africa/Tripoli",
-                    "Europe/Uzhgorod",
-                    "Europe/Vilnius",
-                    "Africa/Mogadishu",
-                    "Europe/Moscow",
-                    "Asia/Kuwait",
-                    "Indian/Antananarivo",
-                    "Antarctica/Syowa",
-                    "Africa/Asmara",
-                    "Asia/Baghdad",
-                    "Africa/Dar_es_Salaam",
-                    "Africa/Djibouti",
-                    "Asia/Qatar",
-                    "Israel",
-                    "Europe/Istanbul",
-                    "Turkey",
-                    "Africa/Kampala",
-                    "Indian/Mayotte",
-                    "Asia/Bahrain",
-                    "Europe/Minsk",
-                    "Indian/Comoro",
-                    "Africa/Nairobi",
-                    "Africa/Addis_Ababa",
-                    "Asia/Riyadh",
-                    "Asia/Aden",
-                    "Europe/Simferopol",
-                    "Asia/Istanbul",
-                    "Europe/Volgograd",
-                    "Asia/Tehran",
-                    "Europe/Samara",
-                    "Asia/Baku",
-                    "Asia/Dubai",
-                    "Canada/Atlantic",
-                    "Asia/Muscat",
-                    "Indian/Mauritius",
-                    "Indian/Reunion",
-                    "Asia/Tbilisi",
-                    "Indian/Mahe",
-                    "Asia/Yerevan",
-                    "Asia/Kabul",
-                    "Asia/Aqtobe",
-                    "Antarctica/Mawson",
-                    "Asia/Ashgabat",
-                    "Asia/Ashkhabad",
-                    "Asia/Dushanbe",
-                    "Asia/Karachi",
-                    "Asia/Qyzylorda",
-                    "Indian/Maldives",
-                    "Asia/Oral",
-                    "Asia/Aqtau",
-                    "Asia/Tashkent",
-                    "Asia/Yekaterinburg",
-                    "Asia/Colombo",
-                    "Asia/Dacca",
-                    "Asia/Calcutta",
-                    "Asia/Kolkata",
-                    "Asia/Katmandu",
-                    "Asia/Kathmandu",
-                    "Asia/Almaty",
-                    "Antarctica/Vostok",
-                    "Asia/Bishkek",
-                    "Indian/Chagos",
-                    "Asia/Dhaka",
-                    "Asia/Omsk",
-                    "Asia/Thimbu",
-                    "Asia/Thimphu",
-                    "Asia/Urumqi",
-                    "Indian/Cocos",
-                    "Asia/Rangoon",
-                    "Antarctica/Casey",
-                    "Antarctica/Davis",
-                    "Asia/Bangkok",
-                    "Indian/Christmas",
-                    "Asia/Ho_Chi_Minh",
-                    "Asia/Jakarta",
-                    "Asia/Hovd",
-                    "Asia/Krasnoyarsk",
-                    "Asia/Novokuznetsk",
-                    "Asia/Novosibirsk",
-                    "Asia/Phnom_Penh",
-                    "US/Mountain",
-                    "Asia/Pontianak",
-                    "Asia/Vientiane",
-                    "Asia/Brunei",
-                    "Asia/Choibalsan",
-                    "Asia/Hong_Kong",
-                    "Asia/Irkutsk",
-                    "Asia/Kuala_Lumpur",
-                    "Asia/Shanghai",
-                    "Asia/Kuching",
-                    "US/Pacific",
-                    "Asia/Macao",
-                    "Asia/Macau",
-                    "Asia/Makassar",
-                    "Australia/Perth",
-                    "Asia/Manila",
-                    "Singapore",
-                    "Asia/Singapore",
-                    "Australia/Sydney",
-                    "Asia/Taipei",
-                    "Asia/Ulaanbaatar",
-                    "Australia/Eucla",
-                    "Asia/Jayapura",
-                    "Asia/Chita",
-                    "Asia/Dili",
-                    "Pacific/Palau",
-                    "Asia/Khandyga",
-                    "Asia/Pyongyang",
-                    "Asia/Seoul",
-                    "Asia/Tokyo",
-                    "Asia/Yakutsk",
-                    "Australia/Broken_Hill",
-                    "Australia/Adelaide",
-                    "Australia/Darwin",
-                    "Australia/Lindeman",
-                    "Australia/Brisbane",
-                    "Australia/Canberra",
-                    "Antarctica/DumontDUrville",
-                    "Pacific/Yap",
-                    "Pacific/Guam",
-                    "Australia/Hobart",
-                    "Pacific/Port_Moresby",
-                    "Pacific/Saipan",
-                    "Australia/Currie",
-                    "Antarctica/Macquarie",
-                    "Asia/Vladivostok",
-                    "Pacific/Chuuk",
-                    "Australia/Lord_Howe",
-                    "Australia/LHI",
-                    "Pacific/Guadalcanal",
-                    "Pacific/Gambier",
-                    "Pacific/Norfolk",
-                    "Pacific/Pohnpei",
-                    "Asia/Magadan",
-                    "Asia/Srednekolymsk",
-                    "Pacific/Noumea",
-                    "Pacific/Pago_Pago",
-                    "Pacific/Bougainville",
-                    "Pacific/Efate",
-                    "Pacific/Kosrae",
-                    "Asia/Sakhalin",
-                    "Asia/Anadyr",
-                    "Antarctica/McMurdo",
-                    "Pacific/Auckland",
-                    "Kwajalein",
-                    "Pacific/Funafuti",
-                    "Pacific/Kwajalein",
-                    "Pacific/Majuro",
-                    "Pacific/Wallis",
-                    "Asia/Kamchatka",
-                    "Pacific/Fiji",
-                    "Pacific/Tarawa",
-                    "Pacific/Wake",
-                    "Pacific/Nauru",
-                    "Pacific/Chatham",
-                    "Pacific/Apia",
-                    "Pacific/Samoa",
-                    "Pacific/Fakaofo",
-                    "Pacific/Tongatapu",
-                    "Pacific/Enderbury",
-                    "Pacific/Kiritimati",
-                  ].map((tz, i) => ({
-                    label: tz,
-                    value: tz,
-                    displayOrder: i,
-                    hidden: false,
-                  })),
-                  validation: {
-                    blockedEmailDomains: [],
-                    useDefaultBlockList: false,
-                  },
-                },
-              ],
-            },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${hubspotAccessToken}`,
-            "Content-Type": "application/json",
-          },
-        },
+      console.log(
+        "Pending installation saved."
       );
 
-      formId = formRes.data.id;
-      console.log("Form created:", formId);
+      /*
+       * Store state in a secure cookie too.
+       *
+       * MeetHour callback needs to know which installation
+       * this login belongs to.
+       */
+
+      res.setHeader(
+        "Set-Cookie",
+        `meethour_install_state=${encodeURIComponent(
+          installState
+        )}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=900`
+      );
+
+      /*
+       * Send user to MeetHour login.
+       */
+
+      const meethourRedirect =
+        `${process.env.APP_BASE_URL}/meethour-callback`;
+
+      console.log(
+        "REDIRECTING TO MEETHOUR LOGIN:",
+        meethourRedirect
+      );
+
+      const meethourLoginUrl =
+        `https://portal.meethour.io/serviceLogin` +
+        `?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk` +
+        `&redirect_uri=${encodeURIComponent(meethourRedirect)}` +
+        `&device_type=web` +
+        `&response_type=get`;
+
+      return res.redirect(meethourLoginUrl);
+    }
+
+    /*
+    ============================================================
+    STEP 2: FINALIZE
+    ============================================================
+
+    After MeetHour login, we redirect the user back to HubSpot
+    using:
+
+    returnUrl?state=XXXXX
+
+    HubSpot then sends:
+
+    /callback
+      ?step=finalize
+      &code=XXXXX
+      &state=XXXXX
+      &returnUrl=XXXXX
+
+    NOW we can exchange the HubSpot OAuth code.
+    ============================================================
+    */
+
+    if (step === "finalize") {
+      if (!code) {
+        return res.status(400).send(
+          "No HubSpot OAuth code provided!"
+        );
+      }
+
+      if (!state) {
+        return res.status(400).send(
+          "No installation state provided!"
+        );
+      }
+
+      if (!returnUrl) {
+        return res.status(400).send(
+          "Missing HubSpot returnUrl!"
+        );
+      }
+
+      let parsedReturnUrl;
+
+      try {
+        parsedReturnUrl = new URL(returnUrl);
+      } catch (err) {
+        return res.status(400).send(
+          "Invalid HubSpot returnUrl!"
+        );
+      }
+
+      if (
+        parsedReturnUrl.protocol !== "https:" ||
+        !parsedReturnUrl.hostname.endsWith("hubspot.com")
+      ) {
+        return res.status(400).send(
+          "Invalid HubSpot returnUrl!"
+        );
+      }
+
+      await connectDB();
+
+      /*
+       * Find the exact installation using state.
+       *
+       * DO NOT use:
+       *
+       * Token.findOne({ status: "pending" })
+       *
+       * because multiple users could install the app
+       * at the same time.
+       */
+
+      const pendingRecord = await Token.findOne({
+        installState: state,
+        status: {
+          $in: ["pending", "meethour_connected"],
+        },
+      });
+
+      if (!pendingRecord) {
+        console.log(
+          "No pending installation found for state:",
+          state
+        );
+
+        return res.status(400).send(
+          "Installation session expired or invalid. Please reinstall the app."
+        );
+      }
+
+      /*
+       * Make sure the return URL has not changed.
+       */
+
+      if (
+        pendingRecord.hubspotReturnUrl &&
+        pendingRecord.hubspotReturnUrl !== returnUrl
+      ) {
+        console.log("Return URL mismatch.");
+
+        return res.status(400).send(
+          "Invalid installation session."
+        );
+      }
+
+      /*
+      ============================================================
+      EXCHANGE HUBSPOT CODE
+      ============================================================
+      */
+
+      console.log(
+        "Exchanging HubSpot authorization code..."
+      );
+
+      const tokenResponse = await axios.post(
+        "https://api.hubspot.com/oauth/v3/token",
+        qs.stringify({
+          grant_type: "authorization_code",
+          client_id: process.env.HUBSPOT_CLIENT_ID,
+          client_secret: process.env.HUBSPOT_CLIENT_SECRET,
+          redirect_uri: process.env.HUBSPOT_REDIRECT_URI,
+          code: code,
+        }),
+        {
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded",
+          },
+        }
+      );
+
+      const hubspotAccessToken =
+        tokenResponse.data.access_token;
+
+      const hubspotRefreshToken =
+        tokenResponse.data.refresh_token;
+
+      if (!hubspotAccessToken) {
+        throw new Error(
+          "HubSpot did not return an access token."
+        );
+      }
+
+      console.log(
+        "HubSpot OAuth token received."
+      );
+
+      /*
+      ============================================================
+      GET HUBSPOT PORTAL INFORMATION
+      ============================================================
+      */
+
+      const portalRes = await axios.get(
+        `https://api.hubapi.com/oauth/v3/access-tokens/${hubspotAccessToken}`
+      );
+
+      const portalId =
+        portalRes.data.hub_id;
+
+      if (!portalId) {
+        throw new Error(
+          "Could not determine HubSpot portal ID."
+        );
+      }
+
+      console.log(
+        "HubSpot portal ID:",
+        portalId
+      );
+
+      /*
+      ============================================================
+      SAVE HUBSPOT TOKEN
+      ============================================================
+      */
 
       await Token.findOneAndUpdate(
-        { hubspotPortalId: portalId },
-        { hubspotFormId: formId },
-      );
-    } catch (err) {
-      console.log("Form creation error:", err.response?.data || err.message);
-    }
-
-    //  Workflow creation
-    console.log("FORM ID BEFORE WORKFLOW:", formId);
-    try {
-      console.log("WAITING BEFORE WORKFLOW...");
-
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      const workflowRes = await axios.post(
-        "https://api.hubapi.com/automation/v4/flows",
         {
-          name: "MeetHour Meeting Scheduler Workflow",
-          isEnabled: true,
-          flowType: "WORKFLOW",
-          type: "CONTACT_FLOW",
-          objectTypeId: "0-1",
-          startActionId: "1",
-          nextAvailableActionId: "2",
-          timeWindows: [],
-          blockedDates: [],
-          customProperties: {},
-          suppressionListIds: [],
-          enrollmentCriteria: {
-            shouldReEnroll: true,
-            type: "EVENT_BASED",
-            eventFilterBranches: [
-              {
-                filterBranches: [],
-                filters: [
-                  {
-                    property: "hs_form_id",
-                    operation: {
-                      operator: "IS_ANY_OF",
-                      includeObjectsWithNoValueSet: false,
-                      values: [String(formId)],
-                      operationType: "ENUMERATION",
-                    },
-                    filterType: "PROPERTY",
-                  },
-                ],
-                eventTypeId: "4-1639801",
-                operator: "HAS_COMPLETED",
-                filterBranchType: "UNIFIED_EVENTS",
-                filterBranchOperator: "AND",
-              },
-            ],
-            listMembershipFilterBranches: [],
+          _id: pendingRecord._id,
+        },
+        {
+          hubspotPortalId: portalId,
+          hubspotAccessToken: hubspotAccessToken,
+          hubspotRefreshToken: hubspotRefreshToken,
+          status: "active",
+          updatedAt: new Date(),
+        },
+        {
+          new: true,
+        }
+      );
+
+      console.log(
+        "HubSpot token saved for portal:",
+        portalId
+      );
+
+      /*
+      ============================================================
+      CREATING DEAL PROPERTY GROUP
+      ============================================================
+      */
+
+      try {
+        await axios.post(
+          "https://api.hubapi.com/crm/v3/properties/deals/groups",
+          {
+            name: "meet_hour",
+            label: "Meet Hour",
+            displayOrder: 1,
           },
-          actions: [
+          {
+            headers: {
+              Authorization: `Bearer ${hubspotAccessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log(
+          "Property group created"
+        );
+      } catch (err) {
+        console.log(
+          "Group skipped (may exist):",
+          err.response?.data?.message
+        );
+      }
+
+      /*
+      ============================================================
+      DEAL PROPERTIES
+      ============================================================
+      */
+
+      const dealProperties = [
+        {
+          name: "meeting_date",
+          label: "Meeting Date",
+          type: "date",
+          fieldType: "date",
+          groupName: "meet_hour",
+          displayOrder: 0,
+        },
+
+        {
+          name: "meeting_time",
+          label: "Meeting Time",
+          type: "enumeration",
+          fieldType: "select",
+          groupName: "meet_hour",
+          displayOrder: 1,
+
+          // KEEP YOUR COMPLETE EXISTING TIME OPTIONS HERE
+          options: [
+            { label: "12:00", value: "12:00", displayOrder: 0 },
+            { label: "12:15", value: "12:15", displayOrder: 1 },
+            { label: "12:30", value: "12:30", displayOrder: 2 },
+            { label: "12:45", value: "12:45", displayOrder: 3 },
+
+            // ... keep the rest from your current route
+          ],
+        },
+
+        {
+          name: "meeting_meridiem",
+          label: "Meeting Meridiem",
+          type: "enumeration",
+          fieldType: "select",
+          groupName: "meet_hour",
+          displayOrder: 2,
+
+          options: [
             {
-              type: "WEBHOOK",
-              actionId: "1",
-              webhookUrl: "https://meethourhubs.vercel.app/form-webhook",
-              method: "POST",
-              queryParams: [],
+              label: "AM",
+              value: "AM",
+              displayOrder: 0,
+            },
+            {
+              label: "PM",
+              value: "PM",
+              displayOrder: 1,
             },
           ],
         },
 
         {
-          headers: {
-            Authorization: `Bearer ${hubspotAccessToken}`,
-            "Content-Type": "application/json",
-          },
+          name: "timezone",
+          label: "Timezone",
+          type: "enumeration",
+          fieldType: "select",
+          groupName: "meet_hour",
+          displayOrder: 3,
+
+          // KEEP YOUR COMPLETE EXISTING TIMEZONE OPTIONS HERE
+          options: [
+            "Etc/GMT+12",
+            "Pacific/Midway",
+            "Pacific/Niue",
+            "America/Adak",
+
+            // ... keep the rest from your current route
+            "Pacific/Kiritimati",
+          ].map((tz, index) => ({
+            label: tz,
+            value: tz,
+            displayOrder: index,
+          })),
         },
+      ];
+
+      for (const prop of dealProperties) {
+        try {
+          await axios.post(
+            "https://api.hubapi.com/crm/v3/properties/deals",
+            prop,
+            {
+              headers: {
+                Authorization: `Bearer ${hubspotAccessToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          console.log(
+            "Deal property created:",
+            prop.name
+          );
+        } catch (err) {
+          console.log(
+            "Deal property skipped (may exist):",
+            prop.name,
+            err.response?.data?.message
+          );
+        }
+      }
+
+      /*
+      ============================================================
+      CONTACT PROPERTIES
+      ============================================================
+      */
+
+      const contactProperties = [
+        {
+          name: "meeting_name",
+          label: "Meeting Name",
+          type: "string",
+          fieldType: "text",
+          groupName: "contactinformation",
+          displayOrder: 0,
+        },
+
+        {
+          name: "meeting_date",
+          label: "Meeting Date",
+          type: "date",
+          fieldType: "date",
+          groupName: "contactinformation",
+          displayOrder: 1,
+        },
+
+        {
+          name: "meeting_time",
+          label: "Meeting Time",
+          type: "enumeration",
+          fieldType: "select",
+          groupName: "contactinformation",
+          displayOrder: 2,
+
+          // KEEP YOUR COMPLETE EXISTING TIME OPTIONS HERE
+          options: [
+            { label: "12:00", value: "12:00", displayOrder: 0 },
+            { label: "12:30", value: "12:30", displayOrder: 1 },
+            { label: "01:00", value: "01:00", displayOrder: 2 },
+
+            // ... keep the rest from your current route
+          ],
+        },
+
+        {
+          name: "meeting_meridiem",
+          label: "Meeting Meridiem",
+          type: "enumeration",
+          fieldType: "select",
+          groupName: "contactinformation",
+          displayOrder: 3,
+
+          options: [
+            {
+              label: "AM",
+              value: "AM",
+              displayOrder: 0,
+            },
+            {
+              label: "PM",
+              value: "PM",
+              displayOrder: 1,
+            },
+          ],
+        },
+
+        {
+          name: "timezone",
+          label: "Timezone",
+          type: "enumeration",
+          fieldType: "select",
+          groupName: "contactinformation",
+          displayOrder: 4,
+
+          // KEEP YOUR COMPLETE EXISTING TIMEZONE OPTIONS HERE
+          options: [
+            "Etc/GMT+12",
+            "Pacific/Midway",
+            "Pacific/Niue",
+            "America/Adak",
+            "US/Aleutian",
+            "US/Hawaii",
+            "Pacific/Honolulu",
+
+            // ... keep the rest from your current route
+            "Pacific/Kiritimati",
+          ].map((tz, index) => ({
+            label: tz,
+            value: tz,
+            displayOrder: index,
+          })),
+        },
+      ];
+
+      for (const prop of contactProperties) {
+        try {
+          await axios.post(
+            "https://api.hubapi.com/crm/v3/properties/contacts",
+            prop,
+            {
+              headers: {
+                Authorization: `Bearer ${hubspotAccessToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          console.log(
+            "Contact property created:",
+            prop.name
+          );
+        } catch (err) {
+          console.log(
+            "Contact property skipped:",
+            prop.name,
+            err.response?.data?.message
+          );
+        }
+      }
+
+      /*
+      ============================================================
+      CREATE HUBSPOT FORM
+      ============================================================
+      */
+
+      let formId = null;
+
+      try {
+        const formRes = await axios.post(
+          "https://api.hubapi.com/marketing/v3/forms",
+          {
+            name: "MeetHour Meeting Scheduler",
+            formType: "hubspot",
+            archived: false,
+            createdAt: new Date().toISOString(),
+
+            configuration: {
+              allowLinkToResetKnownValues: false,
+              archivable: true,
+              cloneable: false,
+              createNewContactForNewEmail: true,
+              editable: true,
+              recaptchaEnabled: false,
+              notifyContactOwner: false,
+              prePopulateKnownValues: true,
+              language: "en",
+              notifyRecipients: [],
+
+              postSubmitAction: {
+                type: "thank_you",
+                value:
+                  "Thank you! Your meeting has been scheduled.",
+              },
+
+              lifecycleStages: [],
+            },
+
+            displayOptions: {
+              renderRawHtml: false,
+              submitButtonText: "Schedule Meeting",
+              theme: "default_style",
+
+              style: {
+                backgroundWidth: "100%",
+                fontFamily: "Arial",
+                helpTextColor: "#7C98B6",
+                helpTextSize: "14px",
+                labelTextColor: "#33475B",
+                labelTextSize: "14px",
+                legalConsentTextColor: "#33475B",
+                legalConsentTextSize: "14px",
+                submitAlignment: "left",
+                submitColor: "#FF7A59",
+                submitFontColor: "#FFFFFF",
+                submitSize: "12px",
+              },
+            },
+
+            fieldGroups: [
+              {
+                fields: [
+                  {
+                    name: "firstname",
+                    label: "First Name",
+                    objectTypeId: "0-1",
+                    fieldType: "single_line_text",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+
+              {
+                fields: [
+                  {
+                    name: "lastname",
+                    label: "Last Name",
+                    objectTypeId: "0-1",
+                    fieldType: "single_line_text",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+
+              {
+                fields: [
+                  {
+                    name: "email",
+                    label: "Email",
+                    objectTypeId: "0-1",
+                    fieldType: "email",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+
+              {
+                fields: [
+                  {
+                    name: "meeting_name",
+                    label: "Meeting Name",
+                    objectTypeId: "0-1",
+                    fieldType: "single_line_text",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+
+              {
+                fields: [
+                  {
+                    name: "meeting_date",
+                    label: "Meeting Date",
+                    objectTypeId: "0-1",
+                    fieldType: "datepicker",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+
+              {
+                fields: [
+                  {
+                    name: "meeting_time",
+                    label: "Meeting Time",
+                    objectTypeId: "0-1",
+                    fieldType: "dropdown",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+
+                    // KEEP YOUR COMPLETE EXISTING TIME OPTIONS
+                    options: [
+                      {
+                        label: "12:00",
+                        value: "12:00",
+                        displayOrder: 0,
+                      },
+                      {
+                        label: "12:30",
+                        value: "12:30",
+                        displayOrder: 1,
+                      },
+                      {
+                        label: "01:00",
+                        value: "01:00",
+                        displayOrder: 2,
+                      },
+
+                      // ... keep the rest
+                    ],
+
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+
+              {
+                fields: [
+                  {
+                    name: "meeting_meridiem",
+                    label: "AM/PM",
+                    objectTypeId: "0-1",
+                    fieldType: "dropdown",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+
+                    options: [
+                      {
+                        label: "AM",
+                        value: "AM",
+                        displayOrder: 0,
+                      },
+                      {
+                        label: "PM",
+                        value: "PM",
+                        displayOrder: 1,
+                      },
+                    ],
+
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+
+              {
+                fields: [
+                  {
+                    name: "timezone",
+                    label: "Timezone",
+                    objectTypeId: "0-1",
+                    fieldType: "dropdown",
+                    required: true,
+                    hidden: false,
+                    dependentFields: [],
+
+                    // KEEP YOUR COMPLETE EXISTING TIMEZONE OPTIONS
+                    options: [
+                      "Etc/GMT+12",
+                      "Pacific/Midway",
+                      "Pacific/Niue",
+                      "America/Adak",
+
+                      // ... keep the rest
+                      "Pacific/Kiritimati",
+                    ].map((tz, i) => ({
+                      label: tz,
+                      value: tz,
+                      displayOrder: i,
+                      hidden: false,
+                    })),
+
+                    validation: {
+                      blockedEmailDomains: [],
+                      useDefaultBlockList: false,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+
+          {
+            headers: {
+              Authorization:
+                `Bearer ${hubspotAccessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        formId = formRes.data.id;
+
+        console.log(
+          "Form created:",
+          formId
+        );
+
+        await Token.findOneAndUpdate(
+          {
+            hubspotPortalId: portalId,
+          },
+          {
+            hubspotFormId: formId,
+          }
+        );
+      } catch (err) {
+        console.log(
+          "Form creation error:",
+          err.response?.data || err.message
+        );
+      }
+
+      /*
+      ============================================================
+      WORKFLOW CREATION
+      ============================================================
+      */
+
+      console.log(
+        "FORM ID BEFORE WORKFLOW:",
+        formId
       );
 
-      console.log("Workflow created:", workflowRes.data.id);
-    } catch (err) {
-      console.log(
-        "FULL WORKFLOW ERROR:",
-        JSON.stringify(err.response?.data, null, 2),
+      try {
+        console.log(
+          "WAITING BEFORE WORKFLOW..."
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 5000)
+        );
+
+        if (!formId) {
+          throw new Error(
+            "Cannot create workflow because formId is missing."
+          );
+        }
+
+        const workflowRes = await axios.post(
+          "https://api.hubapi.com/automation/v4/flows",
+          {
+            name:
+              "MeetHour Meeting Scheduler Workflow",
+
+            isEnabled: true,
+
+            flowType: "WORKFLOW",
+
+            type: "CONTACT_FLOW",
+
+            objectTypeId: "0-1",
+
+            startActionId: "1",
+
+            nextAvailableActionId: "2",
+
+            timeWindows: [],
+
+            blockedDates: [],
+
+            customProperties: {},
+
+            suppressionListIds: [],
+
+            enrollmentCriteria: {
+              shouldReEnroll: true,
+
+              type: "EVENT_BASED",
+
+              eventFilterBranches: [
+                {
+                  filterBranches: [],
+
+                  filters: [
+                    {
+                      property: "hs_form_id",
+
+                      operation: {
+                        operator:
+                          "IS_ANY_OF",
+
+                        includeObjectsWithNoValueSet:
+                          false,
+
+                        values: [
+                          String(formId),
+                        ],
+
+                        operationType:
+                          "ENUMERATION",
+                      },
+
+                      filterType:
+                        "PROPERTY",
+                    },
+                  ],
+
+                  eventTypeId:
+                    "4-1639801",
+
+                  operator:
+                    "HAS_COMPLETED",
+
+                  filterBranchType:
+                    "UNIFIED_EVENTS",
+
+                  filterBranchOperator:
+                    "AND",
+                },
+              ],
+
+              listMembershipFilterBranches:
+                [],
+            },
+
+            actions: [
+              {
+                type: "WEBHOOK",
+
+                actionId: "1",
+
+                webhookUrl:
+                  "https://meethourhubs.vercel.app/form-webhook",
+
+                method: "POST",
+
+                queryParams: [],
+              },
+            ],
+          },
+
+          {
+            headers: {
+              Authorization:
+                `Bearer ${hubspotAccessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+          }
+        );
+
+        console.log(
+          "Workflow created:",
+          workflowRes.data.id
+        );
+      } catch (err) {
+        console.log(
+          "FULL WORKFLOW ERROR:",
+          JSON.stringify(
+            err.response?.data,
+            null,
+            2
+          )
+        );
+
+        console.log(
+          "Workflow creation error:",
+          err.response?.data ||
+            err.message
+        );
+      }
+
+      /*
+      ============================================================
+      INSTALLATION COMPLETE
+      ============================================================
+      
+      Return to HubSpot's exact returnUrl.
+
+      IMPORTANT:
+      Do not redirect to MeetHour here.
+      MeetHour login already happened during authorize.
+      ============================================================
+      */
+
+      const finalHubSpotUrl =
+        new URL(returnUrl);
+
+      /*
+       * Remove state before the final redirect.
+       */
+
+      finalHubSpotUrl.searchParams.delete(
+        "state"
       );
+
       console.log(
-        "Workflow creation error:",
-        err.response?.data || err.message,
+        "========================================"
+      );
+
+      console.log(
+        "INSTALLATION COMPLETE"
+      );
+
+      console.log(
+        "REDIRECTING BACK TO HUBSPOT:"
+      );
+
+      console.log(
+        finalHubSpotUrl.toString()
+      );
+
+      console.log(
+        "========================================"
+      );
+
+      /*
+       * Clear the installation cookie.
+       */
+
+      res.setHeader(
+        "Set-Cookie",
+        "meethour_install_state=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0"
+      );
+
+      return res.redirect(
+        finalHubSpotUrl.toString()
       );
     }
 
-    const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
-    console.log("REDIRECTING TO MEETHOUR LOGIN:", meethourRedirect);
+    /*
+    ============================================================
+    INVALID STEP
+    ============================================================
+    */
 
-    res.redirect(
-      `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
+    return res.status(400).send(
+      "Invalid HubSpot installation step!"
     );
   } catch (err) {
-    console.error("OAuth Error Details:", {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status,
-    });
-    res.status(500).send(`Installation failed! ${err.message}`);
+    console.error(
+      "OAuth Error Details:",
+      {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        stack: err.stack,
+      }
+    );
+
+    return res.status(500).send(
+      `Installation failed! ${err.message}`
+    );
   }
 });
 
