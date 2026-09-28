@@ -62,7 +62,7 @@ const refreshHubspotToken = async (portalId) => {
   console.log(JSON.stringify(response.data, null, 2));
 
   await Token.findOneAndUpdate(
-    { 
+    {
       hubspotPortalId: String(portalId),
     },
 
@@ -1187,7 +1187,7 @@ app.get("/callback", async (req, res) => {
         console.log(
           "Workflow creation error:",
           err.response?.data ||
-            err.message
+          err.message
         );
       }
 
@@ -1322,9 +1322,16 @@ app.get("/meethour-callback", async (req, res) => {
     );
     console.log("MeetHour user email saved:", meethourUserEmail);
 
-    res.redirect(
-      `https://app.hubspot.com/connected-apps/${pendingRecord.hubspotPortalId}/installed`,
+    const hubspotContinueUrl = new URL(
+      pendingRecord.hubspotReturnUrl
     );
+
+    hubspotContinueUrl.searchParams.set(
+      "state",
+      pendingRecord.installState
+    );
+
+    return res.redirect(hubspotContinueUrl.toString());
   } catch (err) {
     console.error("MeetHour Callback Error:", err.message);
     res.status(500).send("Something went wrong!");
@@ -1691,7 +1698,7 @@ app.post("/deal-webhook", async (req, res) => {
       console.log("Raw meeting_meridiem:", deal.properties.meeting_meridiem);
       console.log("Raw timezone:", deal.properties.timezone);
 
-      
+
 
       const contactId = deal.associations?.contacts?.results?.[0]?.id;
       if (!contactId) {
@@ -1759,9 +1766,9 @@ app.post("/deal-webhook", async (req, res) => {
       console.log("MeetHour raw:", JSON.stringify(meetingRes.data, null, 2));
 
       if (!meetingRes.data.success) {
-       console.log("MeetHour meeting creation failed:", meetingRes.data.message);
-       continue;
-     }
+        console.log("MeetHour meeting creation failed:", meetingRes.data.message);
+        continue;
+      }
 
       const meeting = meetingRes.data.data;
       console.log("Meeting created:", meeting.joinURL);
