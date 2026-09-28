@@ -1302,18 +1302,19 @@ app.get("/meethour-callback", async (req, res) => {
     const meethourUserName = profileRes.data?.data?.name;
     const meethourUserId = profileRes.data?.data?.id;
 
-    console.log("Updating portal:", pendingRecord.hubspotPortalId);
-    console.log("Token to save:", token);
+    console.log("Updating installation:", pendingRecord.installState);
+    // console.log("Token to save:", token);
 
-    await Token.findOneAndUpdate(
-      { hubspotPortalId: pendingRecord.hubspotPortalId },
+        await Token.findOneAndUpdate(
+      { installState: pendingRecord.installState },
       {
         meethourAccessToken: token,
         meethourUserEmail: meethourUserEmail || null,
         meethourUserName: meethourUserName || null,
         meethourUserId: meethourUserId || null,
-        status: "active",
-      },
+        status: "meethour_connected",
+        updatedAt: new Date(),
+      }
     );
 
     console.log(
@@ -1332,7 +1333,7 @@ app.get("/meethour-callback", async (req, res) => {
     );
 
     return res.redirect(hubspotContinueUrl.toString());
-    
+
   } catch (err) {
     console.error("MeetHour Callback Error:", err.message);
     res.status(500).send("Something went wrong!");
