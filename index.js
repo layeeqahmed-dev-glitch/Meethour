@@ -8,6 +8,7 @@ const connectDB = require("./db");
 const Meeting = require("./models/meetings");
 const Token = require("./models/token");
 const Token = require("./models/token");
+const crypto = require("crypto");
 const { InstallSession } = Token;
 
 connectDB()
@@ -177,8 +178,9 @@ app.get("/callback", async (req, res) => {
       if (!returnUrl) return res.status(400).send("Missing returnUrl");
       const sessionId = crypto.randomBytes(16).toString("hex");
       await InstallSession.create({ sessionId, returnUrl });
+      const meethourRedirect = `https://meethourhubs.vercel.app/meethour-callback?sid=${sessionId}`;
       return res.redirect(
-        `${process.env.MEETHOUR_AUTHORIZE_URL}&state=${sessionId}`,
+        `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
       );
     }
 
@@ -2154,11 +2156,20 @@ app.get("/meethour-callback", async (req, res) => {
     if (!token) {
       return res.status(400).send("No MeetHour token found!");
     }
-    const pendingRecord = await Token.findOne({ status: "pending" }).sort({
-      createdAt: -1,
-    });
-    if (!pendingRecord) {
-      return res.status(400).send("Session expired! Please reinstall the app.");
+    // New marketplace flow: session created in /callback (step=authorize)
+    const session = req.query.state
+      ? await InstallSession.findOne({ sessionId: req.query.state })
+      : null;
+
+    // Old flow: latest pending record
+    let pendingRecord = null;
+    if (!session) {
+      pendingRecord = await Token.findOne({ status: "pending" }).sort({
+        createdAt: -1,
+      });
+      if (!pendingRecord) {
+        return res.status(400).send("Session expired! Please reinstall the app.");
+      }
     }
 
     // Fetch MeetHour user profile to get user ID and timezone
@@ -2172,6 +2183,19 @@ app.get("/meethour-callback", async (req, res) => {
     const meethourUserEmail = profileRes.data?.data?.email;
     const meethourUserName = profileRes.data?.data?.name;
     const meethourUserId = profileRes.data?.data?.id;
+
+    if (session) {
+      session.meethourAccessToken = token;
+      session.meethourUserEmail = meethourUserEmail || null;
+      session.meethourUserName = meethourUserName || null;
+      session.meethourUserId = meethourUserId || null;
+      session.state = crypto.randomBytes(32).toString("hex");
+      await session.save();
+
+      const url = new URL(session.returnUrl);
+      url.searchParams.set("state", session.state);
+      return res.redirect(url.toString());
+    }
 
     console.log("Updating portal:", pendingRecord.hubspotPortalId);
     console.log("Token to save:", token);
