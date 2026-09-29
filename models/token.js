@@ -1,5 +1,16 @@
 const mongoose = require('mongoose');
 
+const InstallSession = mongoose.models.InstallSession || mongoose.model("InstallSession", new mongoose.Schema({
+  sessionId: String,            // sent to MeetHour as its own `state`
+  returnUrl: String,
+  meethourUserEmail: String,
+  meethourUserId: String,
+  meethourUserName: String,
+  meethourAccessToken: String,
+  state: String,                // HubSpot state token
+  createdAt: { type: Date, default: Date.now, expires: 600 },
+}));
+
 const TokenSchema = new mongoose.Schema({
   hubspotPortalId: {
     type: String,
@@ -15,10 +26,6 @@ const TokenSchema = new mongoose.Schema({
     default: null
   },
   meethourUserEmail: {
-    type: String,
-    default: null
-  },
-  meethourUserId: {
     type: String,
     default: null
   },
@@ -45,4 +52,6 @@ const TokenSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('Token', TokenSchema);
+const Token = mongoose.models.Token || mongoose.model('Token', TokenSchema);
+module.exports = Token;
+module.exports.InstallSession = InstallSession;

@@ -7,6 +7,8 @@ const qs = require("querystring");
 const connectDB = require("./db");
 const Meeting = require("./models/meetings");
 const Token = require("./models/token");
+const Token = require("./models/token");
+const { InstallSession } = Token;
 
 connectDB()
   .then(() => {
@@ -167,11 +169,30 @@ app.get("/setup", (req, res) => {
 //callback
 app.get("/callback", async (req, res) => {
   try {
-    const code = req.query.code;
+    const { code, step, returnUrl } = req.query;
+    await connectDB();
+
+    // Step 1: partner sign-in start (no code yet)
+    if (step === "authorize") {
+      if (!returnUrl) return res.status(400).send("Missing returnUrl");
+      const sessionId = crypto.randomBytes(16).toString("hex");
+      await InstallSession.create({ sessionId, returnUrl });
+      return res.redirect(
+        `${process.env.MEETHOUR_AUTHORIZE_URL}&state=${sessionId}`,
+      );
+    }
+
     if (!code) {
       return res.status(400).send("No code provided!");
     }
-    await connectDB();
+
+    // Step 3: finalize, verify state
+    let session = null;
+    if (step === "finalize") {
+      session = await InstallSession.findOne({ state: req.query.state });
+      if (!session) return res.redirect(returnUrl);
+    }
+
     const tokenResponse = await axios.post(
       "https://api.hubapi.com/oauth/v1/token",
       qs.stringify({
@@ -193,6 +214,22 @@ app.get("/callback", async (req, res) => {
     const portalId = portalRes.data.hub_id;
 
     console.log("HubSpot token saved for portal:", portalId);
+
+    await Token.findOneAndUpdate(
+      { hubspotPortalId: portalId },
+      {
+        hubspotAccessToken,
+        hubspotRefreshToken,
+        meethourAccessToken: session?.meethourAccessToken ?? null,
+        meethourUserEmail: session?.meethourUserEmail ?? null,
+        meethourUserId: session?.meethourUserId ?? null,
+        meethourUserName: session?.meethourUserName ?? null,
+        status: session?.meethourAccessToken ? "active" : "pending",
+      },
+      { upsert: true, new: true },
+    );
+
+    console.log("Token saved for portal:", portalId);
 
     await Token.findOneAndUpdate(
       { hubspotPortalId: portalId },
@@ -2525,7 +2562,7 @@ app.post("/deal-webhook", async (req, res) => {
       console.log("Raw meeting_meridiem:", deal.properties.meeting_meridiem);
       console.log("Raw timezone:", deal.properties.timezone);
 
-      
+
 
       const contactId = deal.associations?.contacts?.results?.[0]?.id;
       if (!contactId) {
@@ -2593,9 +2630,9 @@ app.post("/deal-webhook", async (req, res) => {
       console.log("MeetHour raw:", JSON.stringify(meetingRes.data, null, 2));
 
       if (!meetingRes.data.success) {
-       console.log("MeetHour meeting creation failed:", meetingRes.data.message);
-       continue;
-     }
+        console.log("MeetHour meeting creation failed:", meetingRes.data.message);
+        continue;
+      }
 
       const meeting = meetingRes.data.data;
       console.log("Meeting created:", meeting.joinURL);
