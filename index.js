@@ -7,7 +7,6 @@ const qs = require("querystring");
 const connectDB = require("./db");
 const Meeting = require("./models/meetings");
 const Token = require("./models/token");
-const Token = require("./models/token");
 const crypto = require("crypto");
 const { InstallSession } = Token;
 
@@ -232,19 +231,6 @@ app.get("/callback", async (req, res) => {
     );
 
     console.log("Token saved for portal:", portalId);
-
-    await Token.findOneAndUpdate(
-      { hubspotPortalId: portalId },
-      {
-        hubspotAccessToken,
-        hubspotRefreshToken,
-        meethourAccessToken: null,
-        status: "pending",
-      },
-      { upsert: true, new: true },
-    );
-
-    console.log("Token saved with status: pending");
 
     // Creating Deal property
     try {
@@ -1369,6 +1355,7 @@ app.get("/callback", async (req, res) => {
 
     // Creating Form
     let formId = null;
+    let formRes;
     try {
       formRes = await axios.post(
         "https://api.hubapi.com/marketing/v3/forms",
@@ -2132,6 +2119,12 @@ app.get("/callback", async (req, res) => {
       );
     }
 
+    // New marketplace flow: install complete, go back to HubSpot
+    if (step === "finalize") {
+      return res.redirect(returnUrl);
+    }
+
+    // Old direct-install flow: MeetHour login
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
     console.log("REDIRECTING TO MEETHOUR LOGIN:", meethourRedirect);
 
@@ -2139,6 +2132,10 @@ app.get("/callback", async (req, res) => {
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
     );
   } catch (err) {
+    if (req.query.step === "finalize" && req.query.returnUrl) {
+      console.error("Finalize error:", err.message);
+      return res.redirect(req.query.returnUrl);
+    }
     console.error("OAuth Error Details:", {
       message: err.message,
       response: err.response?.data,
@@ -2149,17 +2146,27 @@ app.get("/callback", async (req, res) => {
 });
 
 //  MeetHour Callback redirect url after meethour login
+
 app.get("/meethour-callback", async (req, res) => {
   try {
     await connectDB();
+    console.log("meethour-callback params:", Object.keys(req.query));
+
     const token = req.query.access_token;
     if (!token) {
       return res.status(400).send("No MeetHour token found!");
     }
+
     // New marketplace flow: session created in /callback (step=authorize)
-    const session = req.query.state
-      ? await InstallSession.findOne({ sessionId: req.query.state })
+    const sid = req.query.sid;
+    const session = sid
+      ? await InstallSession.findOne({ sessionId: sid })
       : null;
+
+    // sid aaya lekin session nahi mila (expired), to old flow me mat jao
+    if (sid && !session) {
+      return res.status(400).send("Session expired! Please start the install again.");
+    }
 
     // Old flow: latest pending record
     let pendingRecord = null;
@@ -2184,6 +2191,7 @@ app.get("/meethour-callback", async (req, res) => {
     const meethourUserName = profileRes.data?.data?.name;
     const meethourUserId = profileRes.data?.data?.id;
 
+    // New flow: save in session, go back to HubSpot with state
     if (session) {
       session.meethourAccessToken = token;
       session.meethourUserEmail = meethourUserEmail || null;
@@ -2197,8 +2205,8 @@ app.get("/meethour-callback", async (req, res) => {
       return res.redirect(url.toString());
     }
 
+    // Old flow (unchanged)
     console.log("Updating portal:", pendingRecord.hubspotPortalId);
-    console.log("Token to save:", token);
 
     await Token.findOneAndUpdate(
       { hubspotPortalId: pendingRecord.hubspotPortalId },
