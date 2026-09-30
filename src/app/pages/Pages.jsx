@@ -236,6 +236,7 @@ const RecordingCard = ({ r, actions }) => (
             actions.openIframeModal({
               uri: `${PLAYER_URL}?path=${encodeURIComponent(r.path)}`,
               width: 900,
+              title: r.topic,
               height: 560,
             })
           }
