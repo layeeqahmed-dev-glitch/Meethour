@@ -11,9 +11,11 @@ import {
   hubspot,
 } from "@hubspot/ui-extensions";
 
-hubspot.extend(({ context }) => <Dashboard context={context} />);
-
-const Dashboard = ({ context }) => {
+hubspot.extend(({ context, actions }) => (
+  <Dashboard context={context} actions={actions} />
+));
+const PLAYER_URL = "https://meethourhubs.vercel.app/player";
+const Dashboard = ({ context, actions }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
   const [meetingsCache, setMeetingsCache] = useState({
@@ -142,6 +144,7 @@ const Dashboard = ({ context }) => {
             <RecordingsList
               recordings={recordingsCache[recordingType]}
               loading={recordingsLoading}
+              actions={actions}
             />
           </Flex>
         </Tab>
@@ -208,7 +211,7 @@ const MeetingsList = ({ meetings, loading, type }) => {
   );
 };
 
-const RecordingCard = ({ r }) => (
+const RecordingCard = ({ r, actions }) => (
   <Tile>
     <Flex direction="column" gap="sm">
       <Flex direction="row" gap="xs" wrap="nowrap">
@@ -227,22 +230,39 @@ const RecordingCard = ({ r }) => (
         <Text format={{ fontWeight: "bold" }}>Date :</Text>
         <Text>{r.date}</Text>
       </Flex>
-      <Button
-        href={{
-          url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
-          external: true,
-        }}
-        variant="secondary"
-        size="md"
-        type="button"
-      >
-        Play Recording
-      </Button>
+      {r.type === "MeetHour" && r.path ? (
+        <Button
+          onClick={() =>
+            actions.openIframeModal({
+              uri: `${PLAYER_URL}?path=${encodeURIComponent(r.path)}`,
+              width: 900,
+              height: 560,
+            })
+          }
+          variant="primary"
+          size="md"
+          type="button"
+        >
+          Play Recording
+        </Button>
+      ) : (
+        <Button
+          href={{
+            url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
+            external: true,
+          }}
+          variant="secondary"
+          size="md"
+          type="button"
+        >
+          Play Recording
+        </Button>
+      )}
     </Flex>
   </Tile>
 );
 
-const RecordingsList = ({ recordings, loading }) => {
+const RecordingsList = ({ recordings, loading, actions }) => {
   if (loading || recordings === null)
     return <LoadingSpinner label="Loading recordings..." />;
   if (!recordings.length) return <Text>No recordings found.</Text>;
@@ -250,7 +270,7 @@ const RecordingsList = ({ recordings, loading }) => {
   return (
     <Flex direction="column" gap="lg">
       {recordings.map((r) => (
-        <RecordingCard key={r.id + r.date} r={r} />
+        <RecordingCard key={r.id + r.date} r={r} actions={actions} />
       ))}
     </Flex>
   );

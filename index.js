@@ -3570,6 +3570,54 @@ app.get("/api/meethour-recording-stream", async (req, res) => {
   }
 });
 
+
+const ALLOWED_RECORDING_HOSTS = ["meethour-recording.s3.amazonaws.com"];
+
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+
+app.get("/player", (req, res) => {
+  let src;
+  try {
+    const u = new URL(String(req.query.path));
+    if (u.protocol !== "https:" || !ALLOWED_RECORDING_HOSTS.includes(u.hostname)) {
+      throw new Error("host not allowed");
+    }
+    src = u.toString();
+  } catch (e) {
+    return res.status(400).send("Invalid recording link");
+  }
+
+  res.set("Content-Security-Policy", "frame-ancestors https://*.hubspot.com");
+  res.type("html").send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recording</title>
+  <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet">
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; }
+    #wrap { width: 100vw; height: 100vh; }
+    .video-js .vjs-big-play-button { top: 45% !important; left: 45% !important; }
+    .video-js .vjs-control-bar { background-color: #4B6790; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <video id="my-player" class="video-js" controls preload="auto" playsinline
+      data-setup='{"fill": true}'>
+      <source src="${escapeHtml(src)}" type="video/mp4">
+      <p class="vjs-no-js">Please enable JavaScript to view this video.</p>
+    </video>
+  </div>
+  <script src="https://vjs.zencdn.net/7.10.2/video.min.js"></script>
+</body>
+</html>`);
+});
+
 app.get("/thankyou", (req, res) => {
   res.send("Thank you for submitting the form. We will reach out to you soon.");
 });

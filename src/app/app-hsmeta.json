@@ -22,7 +22,6 @@
         "automation",
         "crm.schemas.contacts.write",
         "crm.objects.appointments.read"
-
       ],
       "optionalScopes": [],
       "conditionallyRequiredScopes": []
@@ -32,7 +31,9 @@
         "https://api.hubapi.com",
         "https://meethourhubs.vercel.app"
       ],
-      "iframe": [],
+      "iframe": [
+        "https://meethourhubs.vercel.app"
+      ],
       "img": []
     },
     "support": {
