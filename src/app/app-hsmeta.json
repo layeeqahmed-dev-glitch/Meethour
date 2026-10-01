@@ -2,7 +2,7 @@
   "uid": "meethour_app",
   "type": "app",
   "config": {
-    "description": "An example to demonstrate how to build a marketplace app with developer projects.",
+    "description": "Schedule and manage Meet Hour video meetings directly from HubSpot. Create meetings from contacts, deals, forms, and the HubSpot meeting scheduler, and keep every meeting logged on the CRM record.",
     "name": "Meet Hour",
     "distribution": "marketplace",
     "auth": {
