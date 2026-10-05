@@ -2360,6 +2360,7 @@ app.post("/create-meeting", async (req, res) => {
         "ENABLE_LOBBY ",
         "WHITE_BOARD",
         "LIVEPAD",
+        "ENABLE_BREAKOUT_ROOMS",
         "DONOR_BOX",
         "CP_CONNECT",
       ],
