@@ -2113,24 +2113,41 @@ app.get("/callback", async (req, res) => {
       );
     }
 
-    //MeetHour login
-    const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
-    console.log("REDIRECTING TO MEETHOUR LOGIN:", meethourRedirect);
+    // ==========================================
+    // REDIRECT TO MEETHOUR LOGIN
+    // ==========================================
 
-    res.redirect(
-      `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
-    );
+    const meethourRedirect =
+      `${process.env.APP_BASE_URL}/meethour-callback`;
+
+    console.log("====================================");
+    console.log("REDIRECTING TO MEETHOUR LOGIN");
+    console.log("APP_BASE_URL:", process.env.APP_BASE_URL);
+    console.log("MEETHOUR REDIRECT:", meethourRedirect);
+    console.log("====================================");
+
+    const meethourLoginUrl =
+      `https://portal.meethour.io/serviceLogin` +
+      `?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk` +
+      `&redirect_uri=${encodeURIComponent(meethourRedirect)}` +
+      `&device_type=web` +
+      `&response_type=get`;
+
+    console.log("FULL MEETHOUR LOGIN URL:", meethourLoginUrl);
+
+    return res.redirect(meethourLoginUrl);
+
   } catch (err) {
-    // if (req.query.step === "finalize" && req.query.returnUrl) {
-    //   console.error("Finalize error:", err.message);
-    //   return res.redirect(req.query.returnUrl);
-    // }
+
     console.error("OAuth Error Details:", {
       message: err.message,
       response: err.response?.data,
       status: err.response?.status,
     });
-    res.status(500).send(`Installation failed! ${err.message}`);
+
+    return res
+      .status(500)
+      .send(`Installation failed! ${err.message}`);
   }
 });
 
