@@ -2113,12 +2113,7 @@ app.get("/callback", async (req, res) => {
       );
     }
 
-    // New marketplace flow: install complete, go back to HubSpot
-    if (step === "finalize") {
-      return res.redirect(returnUrl);
-    }
-
-    // Old direct-install flow: MeetHour login
+    //MeetHour login
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
     console.log("REDIRECTING TO MEETHOUR LOGIN:", meethourRedirect);
 
@@ -2126,10 +2121,10 @@ app.get("/callback", async (req, res) => {
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
     );
   } catch (err) {
-    if (req.query.step === "finalize" && req.query.returnUrl) {
-      console.error("Finalize error:", err.message);
-      return res.redirect(req.query.returnUrl);
-    }
+    // if (req.query.step === "finalize" && req.query.returnUrl) {
+    //   console.error("Finalize error:", err.message);
+    //   return res.redirect(req.query.returnUrl);
+    // }
     console.error("OAuth Error Details:", {
       message: err.message,
       response: err.response?.data,
@@ -2194,7 +2189,16 @@ app.get("/meethour-callback", async (req, res) => {
     res.status(500).send("Something went wrong!");
   }
 });
-
+//random password generator
+function generatePasscode() {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let passcode = "";
+  for (let i = 0; i < 8; i++) {
+    passcode += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return passcode;
+}
 
 
 app.post("/create-meeting", async (req, res) => {
