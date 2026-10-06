@@ -168,8 +168,15 @@ app.get("/setup", (req, res) => {
 
 //callback
 app.get("/callback", async (req, res) => {
+  const t0 = Date.now();
   try {
     const { code, step, returnUrl } = req.query;
+    console.log("[CALLBACK] hit", {
+      queryKeys: Object.keys(req.query),
+      hasCode: !!code,
+      step: step || null,
+    });
+
     await connectDB();
 
     // Step 1: partner sign-in start (no code yet)
@@ -184,6 +191,7 @@ app.get("/callback", async (req, res) => {
     }
 
     if (!code) {
+      console.log("[CALLBACK] no code, returning 400");
       return res.status(400).send("No code provided!");
     }
 
@@ -193,6 +201,12 @@ app.get("/callback", async (req, res) => {
       session = await InstallSession.findOne({ state: req.query.state });
       if (!session) return res.redirect(returnUrl);
     }
+
+    console.log("[CALLBACK] token exchange start", {
+      redirectUri: process.env.HUBSPOT_REDIRECT_URI,
+      hasClientId: !!process.env.HUBSPOT_CLIENT_ID,
+      hasClientSecret: !!process.env.HUBSPOT_CLIENT_SECRET,
+    });
 
     const tokenResponse = await axios.post(
       "https://api.hubapi.com/oauth/v1/token",
@@ -208,13 +222,16 @@ app.get("/callback", async (req, res) => {
 
     const hubspotAccessToken = tokenResponse.data.access_token;
     const hubspotRefreshToken = tokenResponse.data.refresh_token;
+    console.log("[CALLBACK] token exchange ok", tokenResponse.status);
 
     const portalRes = await axios.get(
       `https://api.hubapi.com/oauth/v1/access-tokens/${hubspotAccessToken}`,
     );
     const portalId = portalRes.data.hub_id;
+    console.log("[CALLBACK] portalId", portalId, typeof portalId);
 
     console.log("HubSpot token saved for portal:", portalId);
+    console.log("[CALLBACK] token saved, ms:", Date.now() - t0);
 
     await Token.findOneAndUpdate(
       { hubspotPortalId: portalId },
@@ -1354,6 +1371,7 @@ app.get("/callback", async (req, res) => {
     }
 
     // Creating Form
+    console.log("[CALLBACK] properties done, ms:", Date.now() - t0);
     let formId = null;
     let formRes;
     try {
@@ -2043,6 +2061,7 @@ app.get("/callback", async (req, res) => {
     }
 
     //  Workflow creation
+    console.log("[CALLBACK] form done, ms:", Date.now() - t0);
     console.log("FORM ID BEFORE WORKFLOW:", formId);
     try {
       console.log("WAITING BEFORE WORKFLOW...");
@@ -2119,6 +2138,7 @@ app.get("/callback", async (req, res) => {
       );
     }
 
+    console.log("[CALLBACK] workflow block done, ms:", Date.now() - t0);
     // New marketplace flow: install complete, go back to HubSpot
     if (step === "finalize") {
       return res.redirect(returnUrl);
@@ -2126,12 +2146,17 @@ app.get("/callback", async (req, res) => {
 
     // Old direct-install flow: MeetHour login
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
-    console.log("REDIRECTING TO MEETHOUR LOGIN:", meethourRedirect);
+    console.log("[CALLBACK] redirecting to MeetHour login:", meethourRedirect, "ms:", Date.now() - t0);
 
     res.redirect(
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
     );
   } catch (err) {
+    console.error("[CALLBACK] FAILED at ms:", Date.now() - t0, {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+    });
     if (req.query.step === "finalize" && req.query.returnUrl) {
       console.error("Finalize error:", err.message);
       return res.redirect(req.query.returnUrl);

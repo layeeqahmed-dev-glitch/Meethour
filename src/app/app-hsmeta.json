@@ -2,7 +2,7 @@
   "uid": "meethour_app",
   "type": "app",
   "config": {
-    "description": "Schedule and manage Meet Hour video meetings directly from HubSpot. Create meetings from contacts, deals, forms, and the HubSpot meeting scheduler, and keep every meeting logged on the CRM record.",
+    "description": "Schedule, manage, and view your meetings & recordings without leaving HubSpot",
     "name": "Meet Hour",
     "distribution": "marketplace",
     "auth": {
