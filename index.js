@@ -168,46 +168,12 @@ app.get("/setup", (req, res) => {
 
 //callback
 app.get("/callback", async (req, res) => {
-  const t0 = Date.now();
   try {
-    const { code, step, returnUrl } = req.query;
-    console.log("[CALLBACK] hit", {
-      queryKeys: Object.keys(req.query),
-      hasCode: !!code,
-      step: step || null,
-    });
-
-    await connectDB();
-
-    // Step 1: partner sign-in start (no code yet)
-    if (step === "authorize") {
-      if (!returnUrl) return res.status(400).send("Missing returnUrl");
-      const sessionId = crypto.randomBytes(16).toString("hex");
-      await InstallSession.create({ sessionId, returnUrl });
-      const meethourRedirect = `https://meethourhubs.vercel.app/meethour-callback?sid=${sessionId}`;
-      return res.redirect(
-        `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
-      );
-    }
-
+    const code = req.query.code;
     if (!code) {
-      console.log("[CALLBACK] no code, returning 400");
       return res.status(400).send("No code provided!");
     }
-
-    // Step 3: finalize, verify state
-    let session = null;
-    if (step === "finalize") {
-      session = await InstallSession.findOne({ state: req.query.state });
-      if (!session) return res.redirect(returnUrl);
-    }
-
-    console.log("[CALLBACK] token exchange start", {
-      redirectUri: process.env.HUBSPOT_REDIRECT_URI,
-      hasClientId: !!process.env.HUBSPOT_CLIENT_ID,
-      hasClientSecret: !!process.env.HUBSPOT_CLIENT_SECRET,
-    });
-
+    await connectDB();
     const tokenResponse = await axios.post(
       "https://api.hubapi.com/oauth/v1/token",
       qs.stringify({
@@ -222,32 +188,43 @@ app.get("/callback", async (req, res) => {
 
     const hubspotAccessToken = tokenResponse.data.access_token;
     const hubspotRefreshToken = tokenResponse.data.refresh_token;
-    console.log("[CALLBACK] token exchange ok", tokenResponse.status);
 
     const portalRes = await axios.get(
       `https://api.hubapi.com/oauth/v1/access-tokens/${hubspotAccessToken}`,
     );
     const portalId = portalRes.data.hub_id;
-    console.log("[CALLBACK] portalId", portalId, typeof portalId);
 
     console.log("HubSpot token saved for portal:", portalId);
-    console.log("[CALLBACK] token saved, ms:", Date.now() - t0);
 
     await Token.findOneAndUpdate(
       { hubspotPortalId: portalId },
       {
         hubspotAccessToken,
         hubspotRefreshToken,
-        meethourAccessToken: session?.meethourAccessToken ?? null,
-        meethourUserEmail: session?.meethourUserEmail ?? null,
-        meethourUserId: session?.meethourUserId ?? null,
-        meethourUserName: session?.meethourUserName ?? null,
-        status: session?.meethourAccessToken ? "active" : "pending",
+        meethourAccessToken: null,
+        status: "pending",
       },
       { upsert: true, new: true },
     );
 
-    console.log("Token saved for portal:", portalId);
+    console.log("Token saved with status: pending");
+
+    // Creating Deal property
+    try {
+      await axios.post(
+        "https://api.hubapi.com/crm/v3/properties/deals/groups",
+        { name: "meet_hour", label: "Meet Hour", displayOrder: 1 },
+        {
+          headers: {
+            Authorization: `Bearer ${hubspotAccessToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      console.log("Property group created");
+    } catch (err) {
+      console.log("Group skipped (may exist):", err.response?.data?.message);
+    }
 
     // Creating Deal property
     try {
@@ -1371,7 +1348,6 @@ app.get("/callback", async (req, res) => {
     }
 
     // Creating Form
-    console.log("[CALLBACK] properties done, ms:", Date.now() - t0);
     let formId = null;
     let formRes;
     try {
@@ -2061,7 +2037,6 @@ app.get("/callback", async (req, res) => {
     }
 
     //  Workflow creation
-    console.log("[CALLBACK] form done, ms:", Date.now() - t0);
     console.log("FORM ID BEFORE WORKFLOW:", formId);
     try {
       console.log("WAITING BEFORE WORKFLOW...");
@@ -2138,7 +2113,6 @@ app.get("/callback", async (req, res) => {
       );
     }
 
-    console.log("[CALLBACK] workflow block done, ms:", Date.now() - t0);
     // New marketplace flow: install complete, go back to HubSpot
     if (step === "finalize") {
       return res.redirect(returnUrl);
@@ -2146,17 +2120,12 @@ app.get("/callback", async (req, res) => {
 
     // Old direct-install flow: MeetHour login
     const meethourRedirect = `${process.env.APP_BASE_URL}/meethour-callback`;
-    console.log("[CALLBACK] redirecting to MeetHour login:", meethourRedirect, "ms:", Date.now() - t0);
+    console.log("REDIRECTING TO MEETHOUR LOGIN:", meethourRedirect);
 
     res.redirect(
       `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
     );
   } catch (err) {
-    console.error("[CALLBACK] FAILED at ms:", Date.now() - t0, {
-      message: err.message,
-      status: err.response?.status,
-      data: err.response?.data,
-    });
     if (req.query.step === "finalize" && req.query.returnUrl) {
       console.error("Finalize error:", err.message);
       return res.redirect(req.query.returnUrl);
@@ -2171,37 +2140,18 @@ app.get("/callback", async (req, res) => {
 });
 
 //  MeetHour Callback redirect url after meethour login
-
 app.get("/meethour-callback", async (req, res) => {
   try {
     await connectDB();
-    console.log("meethour-callback params:", Object.keys(req.query));
-
     const token = req.query.access_token;
     if (!token) {
       return res.status(400).send("No MeetHour token found!");
     }
-
-    // New marketplace flow: session created in /callback (step=authorize)
-    const sid = req.query.sid;
-    const session = sid
-      ? await InstallSession.findOne({ sessionId: sid })
-      : null;
-
-    // sid aaya lekin session nahi mila (expired), to old flow me mat jao
-    if (sid && !session) {
-      return res.status(400).send("Session expired! Please start the install again.");
-    }
-
-    // Old flow: latest pending record
-    let pendingRecord = null;
-    if (!session) {
-      pendingRecord = await Token.findOne({ status: "pending" }).sort({
-        createdAt: -1,
-      });
-      if (!pendingRecord) {
-        return res.status(400).send("Session expired! Please reinstall the app.");
-      }
+    const pendingRecord = await Token.findOne({ status: "pending" }).sort({
+      createdAt: -1,
+    });
+    if (!pendingRecord) {
+      return res.status(400).send("Session expired! Please reinstall the app.");
     }
 
     // Fetch MeetHour user profile to get user ID and timezone
@@ -2216,22 +2166,8 @@ app.get("/meethour-callback", async (req, res) => {
     const meethourUserName = profileRes.data?.data?.name;
     const meethourUserId = profileRes.data?.data?.id;
 
-    // New flow: save in session, go back to HubSpot with state
-    if (session) {
-      session.meethourAccessToken = token;
-      session.meethourUserEmail = meethourUserEmail || null;
-      session.meethourUserName = meethourUserName || null;
-      session.meethourUserId = meethourUserId || null;
-      session.state = crypto.randomBytes(32).toString("hex");
-      await session.save();
-
-      const url = new URL(session.returnUrl);
-      url.searchParams.set("state", session.state);
-      return res.redirect(url.toString());
-    }
-
-    // Old flow (unchanged)
     console.log("Updating portal:", pendingRecord.hubspotPortalId);
+    console.log("Token to save:", token);
 
     await Token.findOneAndUpdate(
       { hubspotPortalId: pendingRecord.hubspotPortalId },
@@ -2259,16 +2195,7 @@ app.get("/meethour-callback", async (req, res) => {
   }
 });
 
-//random password generator
-function generatePasscode() {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let passcode = "";
-  for (let i = 0; i < 8; i++) {
-    passcode += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return passcode;
-}
+
 
 app.post("/create-meeting", async (req, res) => {
   try {
