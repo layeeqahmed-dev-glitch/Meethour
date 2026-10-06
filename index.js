@@ -2206,6 +2206,7 @@ app.get("/meethour-callback", async (req, res) => {
     res.status(500).send("Something went wrong!");
   }
 });
+
 //random password generator
 function generatePasscode() {
   const chars =
