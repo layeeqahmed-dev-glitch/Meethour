@@ -2135,7 +2135,13 @@ app.get("/callback", async (req, res) => {
 
     console.log("FULL MEETHOUR LOGIN URL:", meethourLoginUrl);
 
-    return res.redirect(meethourLoginUrl);
+    return res.send(`
+      <h2>MeetHour Login Test</h2>
+      <p>Click below to continue:</p>
+      <a href="${meethourLoginUrl}" target="_self">
+        Open MeetHour Service Login
+      </a>
+    `);
 
   } catch (err) {
 
