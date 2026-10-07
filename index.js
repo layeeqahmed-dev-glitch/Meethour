@@ -2132,10 +2132,23 @@ app.get("/callback", async (req, res) => {
       `&redirect_uri=${encodeURIComponent(meethourRedirect)}` +
       `&device_type=web` +
       `&response_type=get`;
-
     console.log("FULL MEETHOUR LOGIN URL:", meethourLoginUrl);
 
-    return res.redirect(meethourLoginUrl);
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <script>
+            if (window.opener) {
+              window.opener.location.href = ${JSON.stringify(meethourLoginUrl)};
+              window.close();
+            } else {
+              window.location.href = ${JSON.stringify(meethourLoginUrl)};
+            }
+          </script>
+        </body>
+      </html>
+    `);
 
   } catch (err) {
 
