@@ -8,7 +8,7 @@ const InstallSession = mongoose.models.InstallSession || mongoose.model("Install
   meethourUserName: String,
   meethourAccessToken: String,
   state: String,                // HubSpot state token
-  createdAt: { type: Date, default: Date.now, expires: 600 },
+  createdAt: { type: Date, default: Date.now, expires: 1800 },
 }));
 
 const TokenSchema = new mongoose.Schema({
@@ -33,11 +33,15 @@ const TokenSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  meethourUserId: { 
+  meethourUserId: {
     type: String,
-    default: null 
+    default: null
   },
   meethourAccessToken: {
+    type: String,
+    default: null
+  },
+  hubspotFormId: {
     type: String,
     default: null
   },
