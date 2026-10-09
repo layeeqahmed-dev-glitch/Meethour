@@ -3228,7 +3228,7 @@ app.get("/api/meethour-meetings", async (req, res) => {
       endpoint,
       {
         limit: 10,
-        page: 0,
+        page: 1,
         show_all: 1,
       },
       {
@@ -3534,7 +3534,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
       {
         filter_by: filterBy,
         limit: 10,
-        page: 0,
+        page: 1,
         show_all: 1
       },
       {
