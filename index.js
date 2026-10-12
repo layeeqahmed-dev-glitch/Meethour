@@ -2190,6 +2190,7 @@ app.get("/meethour-callback", async (req, res) => {
     await connectDB();
     const token = req.query.access_token;
     const sid = req.query.sid;
+    console.log("[MEETHOUR-CALLBACK] hit", { hasToken: !!token, sid: sid || null });
     if (!token) {
       return res.status(400).send("No MeetHour token found!");
     }
@@ -2401,6 +2402,7 @@ app.post("/create-meeting", async (req, res) => {
         "ENABLE_BREAKOUT_ROOMS",
         "DONOR_BOX",
         "CP_CONNECT",
+        "RECORDING"
       ],
       hostusers: meethourUserId ? [Number(tokenRecord.meethourUserId)] : [],
     };
