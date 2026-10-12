@@ -184,6 +184,12 @@ app.get("/callback", async (req, res) => {
       if (!returnUrl) return res.status(400).send("Missing returnUrl");
       const sessionId = crypto.randomBytes(16).toString("hex");
       await InstallSession.create({ sessionId, returnUrl });
+      res.cookie("mh_sid", sessionId, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 30 * 60 * 1000,
+      });
       const meethourRedirect = `https://meethourhubs.vercel.app/meethour-callback?sid=${sessionId}`;
       return res.redirect(
         `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
@@ -2189,7 +2195,9 @@ app.get("/meethour-callback", async (req, res) => {
   try {
     await connectDB();
     const token = req.query.access_token;
-    const sid = req.query.sid;
+    const sid =
+      req.query.sid ||
+      (req.headers.cookie || "").match(/mh_sid=([a-f0-9]+)/)?.[1];
     console.log("[MEETHOUR-CALLBACK] hit", { hasToken: !!token, sid: sid || null });
     if (!token) {
       return res.status(400).send("No MeetHour token found!");
@@ -2230,6 +2238,7 @@ app.get("/meethour-callback", async (req, res) => {
 
       const u = new URL(session.returnUrl);
       u.searchParams.set("state", state);
+      res.clearCookie("mh_sid");
       return res.redirect(u.toString());
     }
 
