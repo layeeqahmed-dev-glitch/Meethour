@@ -3597,6 +3597,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
 });
 
 //streaming recording
+app.get("/favicon.ico", (req, res) => res.status(204).end());
 app.get("/api/meethour-recording-stream", async (req, res) => {
   try {
     await connectDB();
