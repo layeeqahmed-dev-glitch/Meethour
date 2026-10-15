@@ -36,7 +36,6 @@ const refreshHubspotToken = async (portalId) => {
   if (!tokenRecord) {
     throw new Error(`No token record found for portal ${portalId}`);
   }
-
   if (!tokenRecord.hubspotRefreshToken) {
     throw new Error("hubspotRefreshToken missing in DB");
   }
@@ -46,11 +45,8 @@ const refreshHubspotToken = async (portalId) => {
 
     new URLSearchParams({
       grant_type: "refresh_token",
-
       client_id: process.env.HUBSPOT_CLIENT_ID,
-
       client_secret: process.env.HUBSPOT_CLIENT_SECRET,
-
       refresh_token: tokenRecord.hubspotRefreshToken,
     }),
 
@@ -62,13 +58,9 @@ const refreshHubspotToken = async (portalId) => {
   );
 
   console.log("REFRESH RESPONSE:");
-
   console.log(JSON.stringify(response.data, null, 2));
-
   await Token.findOneAndUpdate(
-    {
-      hubspotPortalId: String(portalId),
-    },
+    { hubspotPortalId: String(portalId), },
 
     {
       hubspotAccessToken: response.data.access_token,
@@ -3572,7 +3564,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
       ...(data.custom_recordings || []),
     ].map((r) => ({
       id: r.recording_id,
-      topic: r.topic,
+      topic: `Recording: ${r.topic}`,
       date: r.recording_date,
       duration: r.duration,
       type: r.recording_type === "Custom" ? "CustomS3" : r.recording_type,
