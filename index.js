@@ -3564,7 +3564,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
       ...(data.custom_recordings || []),
     ].map((r) => ({
       id: r.recording_id,
-      topic: `Recording: ${r.topic}`,
+      topic: r.topic,
       date: r.recording_date,
       duration: r.duration,
       type: r.recording_type === "Custom" ? "CustomS3" : r.recording_type,
