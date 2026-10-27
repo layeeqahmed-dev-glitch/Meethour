@@ -80,7 +80,6 @@ app.get("/setup", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
     <title>MeetHour for HubSpot — Setup Guide</title>
@@ -2637,7 +2636,6 @@ app.post("/deal-webhook", async (req, res) => {
       console.log("Raw timezone:", deal.properties.timezone);
 
 
-
       const contactId = deal.associations?.contacts?.results?.[0]?.id;
       if (!contactId) {
         console.log("No contact associated with deal");
@@ -2906,9 +2904,7 @@ app.post("/update-meeting", async (req, res) => {
 app.post("/form-webhook", async (req, res) => {
   try {
     console.log("===== FORM WEBHOOK =====");
-
     console.log("BODY:", JSON.stringify(req.body, null, 2));
-
     await connectDB();
 
     // ======================================================
@@ -2935,13 +2931,9 @@ app.post("/form-webhook", async (req, res) => {
 
     try {
       const dateObj = new Date(parseInt(rawDate));
-
       const yyyy = dateObj.getUTCFullYear();
-
       const mm = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
-
       const dd = String(dateObj.getUTCDate()).padStart(2, "0");
-
       meeting_date = `${yyyy}-${mm}-${dd}`;
     } catch (e) {
       console.log("DATE FORMAT ERROR");
@@ -2953,7 +2945,6 @@ app.post("/form-webhook", async (req, res) => {
     // ======================================================
 
     let meeting_time = rawTime;
-
     if (rawTime && rawTime.includes(":")) {
       const [strHours, strMinutes] = rawTime.split(":");
 
@@ -3131,10 +3122,10 @@ app.post("/form-webhook", async (req, res) => {
 
               hs_meeting_title: meeting_name,
               hs_meeting_body: `
-                  <b>Topic:</b> ${meeting_name}<br>
-                  <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br>
-                  <b>Meeting Url:</b> ${meeting.joinURL}<br><br>
-                  <b>Meeting ID:</b> ${meeting.meeting_id}<br>
+                  <b>Topic:</b> ${meeting_name}<br><br>
+                  <b>Date & Time:</b> ${meeting_date} ${meeting_time} ${meeting_meridiem}  ${timezone}<br><br><br>
+                  <b>Meeting Url:</b> ${meeting.joinURL}<br><br><br>
+                  <b>Meeting ID:</b> ${meeting.meeting_id}<br><br>
                   <b>Passcode:</b> ${meeting.passcode}`,
 
               hs_meeting_start_time: new Date(startTimestamp).toISOString(),
@@ -3181,7 +3172,6 @@ app.post("/form-webhook", async (req, res) => {
     });
   } catch (err) {
     console.log("FORM WEBHOOK ERROR:", err.response?.data || err.message);
-
     return res.status(500).json({
       success: false,
       error: err.response?.data || err.message,
@@ -3193,9 +3183,7 @@ app.post("/form-webhook", async (req, res) => {
 app.get("/api/meethour-meetings", async (req, res) => {
   try {
     console.log("===== MEETHOUR MEETINGS =====");
-
     await connectDB();
-
     const { portalId, type } = req.query;
 
     console.log("PORTAL ID:", portalId);
@@ -3226,7 +3214,6 @@ app.get("/api/meethour-meetings", async (req, res) => {
         ? "https://api.meethour.io/api/v1.2/meeting/completedmeetings"
         : "https://api.meethour.io/api/v1.2/meeting/upcomingmeetings";
 
-
     const meetingsRes = await axios.post(
       endpoint,
       {
@@ -3242,25 +3229,19 @@ app.get("/api/meethour-meetings", async (req, res) => {
       }
     );
 
-
     const meetings = (meetingsRes.data.meetings || []).map((m) => {
-
       let formattedStartTime = m.start_time;
-
       try {
         if (m.start_time && m.timezone) {
-
           // Treat API start_time as UTC
           const utcDate = new Date(
             m.start_time.replace(" ", "T") + "Z"
           );
-
           formattedStartTime = utcDate.toLocaleString("en-IN", {
             timeZone: m.timezone,
             dateStyle: "medium",
             timeStyle: "short",
           });
-
         }
       } catch (error) {
         console.log(
@@ -3269,18 +3250,12 @@ app.get("/api/meethour-meetings", async (req, res) => {
         );
       }
 
-
       return {
         id: m.id,
         topic: m.topic,
-
-        // Converted display time
         startTime: formattedStartTime,
-
-        // Original values (useful for debugging)
         startTimeUTC: m.start_time,
         timezone: m.timezone,
-
         duration: m.duration,
         joinURL: m.joinURL,
         totalAttended: m.total_attended,
@@ -3289,17 +3264,14 @@ app.get("/api/meethour-meetings", async (req, res) => {
       };
     });
 
-
     console.log(
       `FOUND ${meetings.length} ${type.toUpperCase()} MEETINGS`
     );
-
 
     return res.json({
       success: true,
       meetings,
     });
-
 
   } catch (err) {
 
@@ -3314,8 +3286,6 @@ app.get("/api/meethour-meetings", async (req, res) => {
     });
   }
 });
-
-
 
 // CREATE FORM & WORKFLOW FUNCTION
 async function setupMeetHourHubSpot(portalId, accessToken) {
