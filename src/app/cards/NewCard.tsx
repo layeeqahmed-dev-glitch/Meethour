@@ -387,7 +387,7 @@ const RecordingCard = ({ r }: { r: Recording }) => {
 
         <Button
           href={{
-            url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
+            url: `https://portal.meethour.org/customer/view_recording/${r.id}`,
             external: true,
           }}
           variant="secondary"
