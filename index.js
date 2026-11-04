@@ -2198,7 +2198,14 @@ app.get("/meethour-callback", async (req, res) => {
     const profileRes = await axios.post(
       "https://api.meethour.org/api/v1.2/customer/user_details",
       {},
-      { headers: { Authorization: `Bearer ${token}` } },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
+        }
+      },
     );
     console.log("MeetHour profile:", JSON.stringify(profileRes.data, null, 2));
 
@@ -2338,6 +2345,8 @@ app.post("/create-meeting", async (req, res) => {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
         },
       },
     );
@@ -2416,6 +2425,8 @@ app.post("/create-meeting", async (req, res) => {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
         },
       },
     );
@@ -2549,6 +2560,8 @@ app.post("/delete-meeting", async (req, res) => {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
         },
       },
     );
@@ -2694,8 +2707,10 @@ app.post("/deal-webhook", async (req, res) => {
         meetingPayload,
         {
           headers: {
-            Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            "User-Agent": "HubSpot",
+            "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
           },
         },
       );
@@ -2870,8 +2885,10 @@ app.post("/update-meeting", async (req, res) => {
       editPayload,
       {
         headers: {
-          Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
         },
       },
     );
@@ -3027,8 +3044,10 @@ app.post("/form-webhook", async (req, res) => {
       payload,
       {
         headers: {
-          Authorization: `Bearer ${meethourToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
         },
       },
     );
@@ -3514,6 +3533,8 @@ app.get("/api/meethour-recordings", async (req, res) => {
         headers: {
           Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
           "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
         },
       }
     );
