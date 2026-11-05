@@ -2046,6 +2046,7 @@ app.get("/callback", async (req, res) => {
       console.log("Form creation error:", err.response?.data || err.message);
     }
 
+
     //  Workflow creation
     console.log("FORM ID BEFORE WORKFLOW:", formId);
     try {
@@ -2124,15 +2125,12 @@ app.get("/callback", async (req, res) => {
     }
     console.log("[CALLBACK] setup done, ms:", Date.now() - t0);
 
-    // Marketplace flow: install complete, go back to HubSpot
+    // install complete, back to HubSpot
     if (step === "finalize") {
       return res.redirect(returnUrl);
     }
 
-    // ==========================================
     // REDIRECT TO MEETHOUR LOGIN
-    // ==========================================
-
     const meethourRedirect =
       `${process.env.APP_BASE_URL}/meethour-callback`;
 
@@ -2181,6 +2179,7 @@ app.get("/callback", async (req, res) => {
       .send(`Installation failed! ${err.message}`);
   }
 });
+
 //  MeetHour Callback redirect url after meethour login
 app.get("/meethour-callback", async (req, res) => {
   try {
@@ -2213,9 +2212,7 @@ app.get("/meethour-callback", async (req, res) => {
     const meethourUserName = profileRes.data?.data?.name;
     const meethourUserId = profileRes.data?.data?.id;
 
-    // ==========================================
-    // MARKETPLACE FLOW (sid present)
-    // ==========================================
+    // MARKETPLACE FLOW 
     if (sid) {
       const session = await InstallSession.findOne({ sessionId: sid });
       if (!session) {
@@ -2240,9 +2237,7 @@ app.get("/meethour-callback", async (req, res) => {
       return res.redirect(u.toString());
     }
 
-    // ==========================================
-    // DIRECT-INSTALL FLOW (no sid)
-    // ==========================================
+    // DIRECT-INSTALL FLOW
     const pendingRecord = await Token.findOne({ status: "pending" }).sort({
       createdAt: -1,
     });
@@ -2291,6 +2286,7 @@ function generatePasscode() {
 }
 
 
+//create meeting
 app.post("/create-meeting", async (req, res) => {
   try {
     console.log("------ NEW REQUEST ------");
@@ -2513,9 +2509,7 @@ app.post("/delete-meeting", async (req, res) => {
     console.log("------ DELETE MEETING REQUEST ------");
     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
-    // Wait for DB to connect (needed for Vercel serverless)
     await connectDB();
-
     const portalId = req.body.portalId;
     const conferenceId = req.body.conferenceId;
 
@@ -2582,7 +2576,6 @@ app.post("/delete-meeting", async (req, res) => {
 app.post("/deal-webhook", async (req, res) => {
   try {
     await connectDB();
-
     const events = req.body;
     if (!Array.isArray(events)) return res.sendStatus(200);
 
@@ -2590,7 +2583,6 @@ app.post("/deal-webhook", async (req, res) => {
       const { subscriptionType, portalId, objectId, propertyValue } = event;
 
       if (subscriptionType !== "deal.propertyChange") continue;
-
       console.log(
         `Deal ${objectId} stage changed to: ${propertyValue} for portal: ${portalId}`,
       );
@@ -2598,8 +2590,8 @@ app.post("/deal-webhook", async (req, res) => {
       const tokenRecord = await Token.findOne({
         hubspotPortalId: String(portalId),
       });
-      console.log("tokenRecord:", tokenRecord ? "found" : "NOT FOUND");
 
+      console.log("tokenRecord:", tokenRecord ? "found" : "NOT FOUND");
       if (!tokenRecord || !tokenRecord.meethourAccessToken) {
         console.log("No token found for portal:", portalId);
         continue;
@@ -2672,7 +2664,8 @@ app.post("/deal-webhook", async (req, res) => {
       }
 
       const meeting_date = deal.properties.meeting_date;
-      // CHANGE 1: dropdown value is already a clean string like "04:00", use as-is
+
+      // dropdown value is already a clean string like "04:00",
       const meeting_time = deal.properties.meeting_time;
       const meeting_meridiem = deal.properties.meeting_meridiem;
       const timezone = deal.properties.timezone;
@@ -2734,7 +2727,8 @@ app.post("/deal-webhook", async (req, res) => {
       });
       console.log("Meeting saved to DB!");
 
-      // CHANGE 2 & 3: log as engagement type MEETING so it shows in HubSpot Meetings tab
+
+      // log as engagement type MEETING so it shows in HubSpot Meetings tab
       const formattedTime = `${meeting_time} ${meeting_meridiem} (${timezone})`;
       const startTimestamp = new Date(
         `${meeting_date} ${meeting_time} ${meeting_meridiem}`,
@@ -2803,119 +2797,119 @@ app.post("/deal-webhook", async (req, res) => {
 });
 
 //update meeting
-app.post("/update-meeting", async (req, res) => {
-  try {
-    console.log("========== UPDATE MEETING ==========");
-    console.log("BODY:", JSON.stringify(req.body, null, 2));
+// app.post("/update-meeting", async (req, res) => {
+//   try {
+//     console.log("========== UPDATE MEETING ==========");
+//     console.log("BODY:", JSON.stringify(req.body, null, 2));
 
-    await connectDB();
+//     await connectDB();
 
-    const { portalId, conferenceId, topic, startTime, timezone } = req.body;
+//     const { portalId, conferenceId, topic, startTime, timezone } = req.body;
 
-    if (!portalId || !conferenceId) {
-      return res.sendStatus(400);
-    }
+//     if (!portalId || !conferenceId) {
+//       return res.sendStatus(400);
+//     }
 
-    const tokenRecord = await Token.findOne({
-      hubspotPortalId: String(portalId),
-    });
+//     const tokenRecord = await Token.findOne({
+//       hubspotPortalId: String(portalId),
+//     });
 
-    if (!tokenRecord?.meethourAccessToken) {
-      return res.sendStatus(404);
-    }
+//     if (!tokenRecord?.meethourAccessToken) {
+//       return res.sendStatus(404);
+//     }
 
-    const meetingRecord = await Meeting.findOne({
-      conferenceId: String(conferenceId),
-    });
+//     const meetingRecord = await Meeting.findOne({
+//       conferenceId: String(conferenceId),
+//     });
 
-    if (!meetingRecord) {
-      return res.sendStatus(404);
-    }
+//     if (!meetingRecord) {
+//       return res.sendStatus(404);
+//     }
 
-    // base payload
-    const editPayload = {
-      meeting_id: meetingRecord.meethourMeetingId,
-    };
+//     // base payload
+//     const editPayload = {
+//       meeting_id: meetingRecord.meethourMeetingId,
+//     };
 
-    // topic changed
-    if (topic) {
-      editPayload.meeting_name = topic;
-    }
+//     // topic changed
+//     if (topic) {
+//       editPayload.meeting_name = topic;
+//     }
 
-    // date/time changed
-    if (startTime) {
-      const start = new Date(startTime);
+//     // date/time changed
+//     if (startTime) {
+//       const start = new Date(startTime);
 
-      const istDate = new Date(
-        start.toLocaleString("en-US", {
-          timeZone: "Asia/Kolkata",
-        }),
-      );
+//       const istDate = new Date(
+//         start.toLocaleString("en-US", {
+//           timeZone: "Asia/Kolkata",
+//         }),
+//       );
 
-      const meeting_date = `${istDate.getFullYear()}-${String(
-        istDate.getMonth() + 1,
-      ).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
+//       const meeting_date = `${istDate.getFullYear()}-${String(
+//         istDate.getMonth() + 1,
+//       ).padStart(2, "0")}-${String(istDate.getDate()).padStart(2, "0")}`;
 
-      let hours = istDate.getHours();
+//       let hours = istDate.getHours();
 
-      const minutes = istDate.getMinutes();
+//       const minutes = istDate.getMinutes();
 
-      const meeting_meridiem = hours >= 12 ? "PM" : "AM";
+//       const meeting_meridiem = hours >= 12 ? "PM" : "AM";
 
-      hours = hours % 12 || 12;
+//       hours = hours % 12 || 12;
 
-      const meeting_time = `${String(hours).padStart(
-        2,
-        "0",
-      )}:${String(minutes).padStart(2, "0")}`;
+//       const meeting_time = `${String(hours).padStart(
+//         2,
+//         "0",
+//       )}:${String(minutes).padStart(2, "0")}`;
 
-      editPayload.meeting_date = meeting_date;
-      editPayload.meeting_time = meeting_time;
-      editPayload.meeting_meridiem = meeting_meridiem;
+//       editPayload.meeting_date = meeting_date;
+//       editPayload.meeting_time = meeting_time;
+//       editPayload.meeting_meridiem = meeting_meridiem;
 
-      if (timezone) {
-        editPayload.timezone = convertHubspotTimezone(timezone);
-      }
-    }
+//       if (timezone) {
+//         editPayload.timezone = convertHubspotTimezone(timezone);
+//       }
+//     }
 
-    console.log("EDIT PAYLOAD:", JSON.stringify(editPayload, null, 2));
+//     console.log("EDIT PAYLOAD:", JSON.stringify(editPayload, null, 2));
 
-    const response = await axios.post(
-      "https://api.meethour.org/api/v1.2/meeting/editmeeting",
-      editPayload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "User-Agent": "HubSpot",
-          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
-        },
-      },
-    );
+//     const response = await axios.post(
+//       "https://api.meethour.org/api/v1.2/meeting/editmeeting",
+//       editPayload,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//           "User-Agent": "HubSpot",
+//           "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
+//         },
+//       },
+//     );
 
-    console.log("MEETHOUR RESPONSE:", JSON.stringify(response.data, null, 2));
+//     console.log("MEETHOUR RESPONSE:", JSON.stringify(response.data, null, 2));
 
-    // DB update
-    const updateData = {};
+//     // DB update
+//     const updateData = {};
 
-    if (topic) {
-      updateData.meetingName = topic;
-    }
+//     if (topic) {
+//       updateData.meetingName = topic;
+//     }
 
-    await Meeting.findOneAndUpdate(
-      {
-        conferenceId: String(conferenceId),
-      },
-      updateData,
-    );
+//     await Meeting.findOneAndUpdate(
+//       {
+//         conferenceId: String(conferenceId),
+//       },
+//       updateData,
+//     );
 
-    return res.sendStatus(204);
-  } catch (err) {
-    console.error("UPDATE ERROR:", err.response?.data || err.message);
+//     return res.sendStatus(204);
+//   } catch (err) {
+//     console.error("UPDATE ERROR:", err.response?.data || err.message);
 
-    return res.sendStatus(500);
-  }
-});
+//     return res.sendStatus(500);
+//   }
+// });
 
 //scheduling meeting on form submission
 app.post("/form-webhook", async (req, res) => {
@@ -2924,10 +2918,7 @@ app.post("/form-webhook", async (req, res) => {
     console.log("BODY:", JSON.stringify(req.body, null, 2));
     await connectDB();
 
-    // ======================================================
     // HUBSPOT WEBHOOK STRUCTURE
-    // ======================================================
-
     const body = req.body || {};
     const props = body.properties || {};
     const email = props.email?.value || "";
@@ -2956,10 +2947,8 @@ app.post("/form-webhook", async (req, res) => {
       console.log("DATE FORMAT ERROR");
     }
 
-    // ======================================================
     // TIME FORMAT
     // 04:00
-    // ======================================================
 
     let meeting_time = rawTime;
     if (rawTime && rawTime.includes(":")) {
@@ -2989,7 +2978,6 @@ app.post("/form-webhook", async (req, res) => {
     console.log("FINAL MERIDIEM:", meeting_meridiem);
 
     // FIND CUSTOMER TOKEN
-
     const portalId = body["portal-id"] || body.portalId;
     console.log("PORTAL ID:", portalId);
 
@@ -3005,13 +2993,10 @@ app.post("/form-webhook", async (req, res) => {
     }
 
     const meethourToken = tokenRecord.meethourAccessToken;
-
     const meethourUserId = tokenRecord.meethourUserId;
-
     const ownerName = tokenRecord.meethourUserName || "Host";
 
     // CREATE ATTENDEE
-
     const attend = [
       {
         first_name: firstname,
@@ -3021,7 +3006,6 @@ app.post("/form-webhook", async (req, res) => {
     ];
 
     // CREATE MEETHOUR PAYLOAD
-
     const payload = {
       meeting_name,
       meeting_date,
@@ -3067,7 +3051,6 @@ app.post("/form-webhook", async (req, res) => {
     console.log("Meeting saved to DB!");
 
     // CREATE HUBSPOT MEETING ACTIVITY
-
     const hubspotToken = await refreshHubspotToken(portalId);
 
     const contactId = props.hs_object_id?.value || body.vid;
@@ -3094,7 +3077,7 @@ app.post("/form-webhook", async (req, res) => {
           }
         }
 
-        // Fallback: contact has no owner assigned, grab the first owner in the portal
+        //contact has no owner assigned, grab the first owner in the portal
         if (!hubspotOwnerId) {
           try {
             const ownersRes = await axios.get(
