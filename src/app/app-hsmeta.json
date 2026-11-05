@@ -8,7 +8,7 @@
     "auth": {
       "type": "oauth",
       "redirectUrls": [
-        "https://meethourhubs.vercel.app/callback"
+        "meethour-hubspot-swart.vercel.app/callback"
       ],
       "requiredScopes": [
         "oauth",
@@ -29,10 +29,10 @@
     "permittedUrls": {
       "fetch": [
         "https://api.hubapi.com",
-        "https://meethourhubs.vercel.app"
+        "meethour-hubspot-swart.vercel.app"
       ],
       "iframe": [
-        "https://meethourhubs.vercel.app"
+        "meethour-hubspot-swart.vercel.app"
       ],
       "img": []
     },

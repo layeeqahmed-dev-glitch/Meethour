@@ -3,7 +3,7 @@
   "type": "webhooks",
   "config": {
     "settings": {
-      "targetUrl": "https://meethourhubs.vercel.app/deal-webhook",
+      "targetUrl": "meethour-hubspot-swart.vercel.app/deal-webhook",
       "maxConcurrentRequests": 10
     },
     "subscriptions": {
