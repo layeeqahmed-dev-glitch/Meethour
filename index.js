@@ -181,7 +181,7 @@ app.get("/callback", async (req, res) => {
         sameSite: "lax",
         maxAge: 30 * 60 * 1000,
       });
-      const meethourRedirect = `https://meethour-hubspot-swart.vercel.app/meethour-callback?sid=${sessionId}`;
+      const meethourRedirect = `https://hubspot.meethour.io/meethour-callback?sid=${sessionId}`;
       return res.redirect(
         `https://portal.meethour.org/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
       );
@@ -2097,7 +2097,7 @@ app.get("/callback", async (req, res) => {
             {
               type: "WEBHOOK",
               actionId: "1",
-              webhookUrl: "https://meethour-hubspot-swart.vercel.app/form-webhook",
+              webhookUrl: "https://hubspot.meethour.io/form-webhook",
               method: "POST",
               queryParams: [],
             },
@@ -3405,7 +3405,7 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
           actionId: "1",
           type: "WEBHOOK",
           method: "POST",
-          webhookUrl: "https://meethour-hubspot-swart.vercel.app/form-webhook",
+          webhookUrl: "https://hubspot.meethour.io/form-webhook",
           queryParams: [],
         },
       ],

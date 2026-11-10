@@ -92,7 +92,7 @@ const Dashboard = ({ context }: DashboardProps) => {
 
     hubspot
       .fetch(
-        `https://meethour-hubspot-swart.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`
+        `https://hubspot.meethour.io/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`
       )
       .then((res) => {
         if (!res.ok) {
@@ -142,7 +142,7 @@ const Dashboard = ({ context }: DashboardProps) => {
 
     hubspot
       .fetch(
-        `https://meethour-hubspot-swart.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&type=${recordingType}&_t=${Date.now()}`
+        `https://hubspot.meethour.io/api/meethour-recordings?portalId=${context.portal.id}&type=${recordingType}&_t=${Date.now()}`
       )
       .then((res) => {
         if (!res.ok) {

@@ -14,7 +14,7 @@ import {
 hubspot.extend(({ context, actions }) => (
   <Dashboard context={context} actions={actions} />
 ));
-const PLAYER_URL = "https://meethour-hubspot-swart.vercel.app/player";
+const PLAYER_URL = "https://hubspot.meethour.io/player";
 const Dashboard = ({ context, actions }) => {
   const [selected, setSelected] = useState("my-meetings");
   const [meetingType, setMeetingType] = useState("upcoming");
@@ -41,7 +41,7 @@ const Dashboard = ({ context, actions }) => {
 
     hubspot
       .fetch(
-        `https://meethour-hubspot-swart.vercel.app/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`,
+        `https://hubspot.meethour.io/api/meethour-meetings?portalId=${context.portal.id}&type=${meetingType}&_t=${Date.now()}`,
       )
       .then((res) => res.json())
       .then((data) => {
@@ -70,7 +70,7 @@ const Dashboard = ({ context, actions }) => {
 
     hubspot
       .fetch(
-        `https://meethour-hubspot-swart.vercel.app/api/meethour-recordings?portalId=${context.portal.id}&type=${recordingType}&_t=${Date.now()}`,
+        `https://hubspot.meethour.io/api/meethour-recordings?portalId=${context.portal.id}&type=${recordingType}&_t=${Date.now()}`,
       )
       .then((res) => res.json())
       .then((data) => {
