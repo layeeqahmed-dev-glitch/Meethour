@@ -3228,7 +3228,7 @@ app.get("/api/meethour-meetings", async (req, res) => {
           Authorization: `Bearer ${meethourToken}`,
           "Content-Type": "application/json",
           "User-Agent": "HubSpot",
-          "X-Signature": "mysignature",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP",
         },
       }
     );
