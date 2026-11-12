@@ -74,6 +74,12 @@ const refreshHubspotToken = async (portalId) => {
   return response.data.access_token;
 };
 
+//root
+app.get('/', (req, res) => {
+  res.send("HubSpot x Meet Hour integration Running...")
+})
+
+
 //callback
 app.get("/callback", async (req, res) => {
   const t0 = Date.now();
@@ -2420,7 +2426,7 @@ app.post("/create-meeting", async (req, res) => {
   }
 });
 
-// delete meeting route
+// delete meeting
 app.post("/delete-meeting", async (req, res) => {
   try {
     console.log("------ DELETE MEETING REQUEST ------");
@@ -2490,6 +2496,7 @@ app.post("/delete-meeting", async (req, res) => {
   }
 });
 
+//webhook for deal
 app.post("/deal-webhook", async (req, res) => {
   try {
     await connectDB();
@@ -2985,6 +2992,7 @@ app.post("/form-webhook", async (req, res) => {
 });
 
 
+//Fetching meethour meetings
 app.get("/api/meethour-meetings", async (req, res) => {
   try {
     console.log("===== MEETHOUR MEETINGS =====");
@@ -3093,6 +3101,176 @@ app.get("/api/meethour-meetings", async (req, res) => {
     });
   }
 });
+
+
+//fetching recordings
+app.get("/api/meethour-recordings", async (req, res) => {
+  try {
+    await connectDB();
+
+    const { portalId, type = "meethour" } = req.query;
+
+    if (!portalId) {
+      return res.status(400).json({
+        success: false,
+        message: "portalId required",
+      });
+    }
+
+    const tokenRecord = await Token.findOne({
+      hubspotPortalId: String(portalId),
+    });
+
+    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
+      return res.status(400).json({
+        success: false,
+        message: "MeetHour token not found",
+      });
+    }
+
+    const filterMap = {
+      meethour: "MeetHour",
+      dropbox: "Dropbox",
+      onedrive: "OneDrive",
+      customs3: "Custom",
+    };
+
+    const filterBy = filterMap[type] || "MeetHour";
+
+    console.log("Fetching recordings:", filterBy);
+
+    const recRes = await axios.post(
+      "https://api.meethour.org/api/v1.2/customer/videorecordinglist",
+      {
+        filter_by: filterBy,
+        limit: 10,
+        page: 1,
+        show_all: 1
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
+          "Content-Type": "application/json",
+          "User-Agent": "HubSpot",
+          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
+        },
+      }
+    );
+
+    const data = recRes.data;
+
+    console.log("===== RECORDINGS DATA =====");
+    console.log("Filter:", filterBy);
+    console.log("Dropbox:", data.dropbox_recordings?.length || 0);
+    console.log("MeetHour:", data.meethour_recordings?.length || 0);
+    console.log("OneDrive:", data.onedrive_recordings?.length || 0);
+    console.log("Custom:", data.custom_recordings?.length || 0);
+
+    const all = [
+      ...(data.dropbox_recordings || []),
+      ...(data.onedrive_recordings || []),
+      ...(data.meethour_recordings || []),
+      ...(data.custom_recordings || []),
+    ].map((r) => ({
+      id: r.recording_id,
+      topic: r.topic,
+      date: r.recording_date,
+      duration: r.duration,
+      type: r.recording_type === "Custom" ? "CustomS3" : r.recording_type,
+      path: r.recording_path,
+    }));
+
+    return res.json({
+      success: true,
+      recordings: all,
+    });
+  } catch (err) {
+    console.log(
+      "RECORDINGS ERROR:",
+      err.response?.data || err.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      error: err.response?.data || err.message,
+    });
+  }
+});
+
+//streaming recording
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+app.get("/api/meethour-recording-stream", async (req, res) => {
+  try {
+    await connectDB();
+    const { portalId, path } = req.query;
+
+    const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
+    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
+      return res.status(400).send("Token not found");
+    }
+
+    const videoRes = await axios.get(path, {
+      headers: { Authorization: `Bearer ${tokenRecord.meethourAccessToken}` },
+      responseType: "stream",
+    });
+
+    res.setHeader("Content-Type", "video/mp4");
+    videoRes.data.pipe(res);
+  } catch (err) {
+    console.log("STREAM ERROR:", err.response?.data || err.message);
+    res.status(500).send("Stream failed");
+  }
+});
+
+
+const ALLOWED_RECORDING_HOSTS = ["meethour-recording.s3.amazonaws.com"];
+
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+
+app.get("/player", (req, res) => {
+  let src;
+  try {
+    const u = new URL(String(req.query.path));
+    if (u.protocol !== "https:" || !ALLOWED_RECORDING_HOSTS.includes(u.hostname)) {
+      throw new Error("host not allowed");
+    }
+    src = u.toString();
+  } catch (e) {
+    return res.status(400).send("Invalid recording link");
+  }
+
+  res.set("Content-Security-Policy", "frame-ancestors https://*.hubspot.com");
+  res.type("html").send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recording</title>
+  <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet">
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; }
+    #wrap { width: 100vw; height: 100vh; }
+    .video-js .vjs-big-play-button { top: 45% !important; left: 45% !important; }
+    .video-js .vjs-control-bar { background-color: #4B6790; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <video id="my-player" class="video-js" controls preload="auto" playsinline
+      data-setup='{"fill": true}'>
+      <source src="${escapeHtml(src)}" type="video/mp4">
+      <p class="vjs-no-js">Please enable JavaScript to view this video.</p>
+    </video>
+  </div>
+  <script src="https://vjs.zencdn.net/7.10.2/video.min.js"></script>
+</body>
+</html>`);
+});
+
+
 
 // CREATE FORM & WORKFLOW FUNCTION
 async function setupMeetHourHubSpot(portalId, accessToken) {
@@ -3271,174 +3449,6 @@ async function setupMeetHourHubSpot(portalId, accessToken) {
     };
   }
 }
-
-
-//recordingd in UI
-app.get("/api/meethour-recordings", async (req, res) => {
-  try {
-    await connectDB();
-
-    const { portalId, type = "meethour" } = req.query;
-
-    if (!portalId) {
-      return res.status(400).json({
-        success: false,
-        message: "portalId required",
-      });
-    }
-
-    const tokenRecord = await Token.findOne({
-      hubspotPortalId: String(portalId),
-    });
-
-    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
-      return res.status(400).json({
-        success: false,
-        message: "MeetHour token not found",
-      });
-    }
-
-    const filterMap = {
-      meethour: "MeetHour",
-      dropbox: "Dropbox",
-      onedrive: "OneDrive",
-      customs3: "Custom",
-    };
-
-    const filterBy = filterMap[type] || "MeetHour";
-
-    console.log("Fetching recordings:", filterBy);
-
-    const recRes = await axios.post(
-      "https://api.meethour.org/api/v1.2/customer/videorecordinglist",
-      {
-        filter_by: filterBy,
-        limit: 10,
-        page: 1,
-        show_all: 1
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${tokenRecord.meethourAccessToken}`,
-          "Content-Type": "application/json",
-          "User-Agent": "HubSpot",
-          "X-Signature": "6S{cUOT)7!h{[7&o$LnN%8qs4P-0yP"
-        },
-      }
-    );
-
-    const data = recRes.data;
-
-    console.log("===== RECORDINGS DATA =====");
-    console.log("Filter:", filterBy);
-    console.log("Dropbox:", data.dropbox_recordings?.length || 0);
-    console.log("MeetHour:", data.meethour_recordings?.length || 0);
-    console.log("OneDrive:", data.onedrive_recordings?.length || 0);
-    console.log("Custom:", data.custom_recordings?.length || 0);
-
-    const all = [
-      ...(data.dropbox_recordings || []),
-      ...(data.onedrive_recordings || []),
-      ...(data.meethour_recordings || []),
-      ...(data.custom_recordings || []),
-    ].map((r) => ({
-      id: r.recording_id,
-      topic: r.topic,
-      date: r.recording_date,
-      duration: r.duration,
-      type: r.recording_type === "Custom" ? "CustomS3" : r.recording_type,
-      path: r.recording_path,
-    }));
-
-    return res.json({
-      success: true,
-      recordings: all,
-    });
-  } catch (err) {
-    console.log(
-      "RECORDINGS ERROR:",
-      err.response?.data || err.message
-    );
-
-    return res.status(500).json({
-      success: false,
-      error: err.response?.data || err.message,
-    });
-  }
-});
-
-//streaming recording
-app.get("/favicon.ico", (req, res) => res.status(204).end());
-app.get("/api/meethour-recording-stream", async (req, res) => {
-  try {
-    await connectDB();
-    const { portalId, path } = req.query;
-
-    const tokenRecord = await Token.findOne({ hubspotPortalId: String(portalId) });
-    if (!tokenRecord || !tokenRecord.meethourAccessToken) {
-      return res.status(400).send("Token not found");
-    }
-
-    const videoRes = await axios.get(path, {
-      headers: { Authorization: `Bearer ${tokenRecord.meethourAccessToken}` },
-      responseType: "stream",
-    });
-
-    res.setHeader("Content-Type", "video/mp4");
-    videoRes.data.pipe(res);
-  } catch (err) {
-    console.log("STREAM ERROR:", err.response?.data || err.message);
-    res.status(500).send("Stream failed");
-  }
-});
-
-
-const ALLOWED_RECORDING_HOSTS = ["meethour-recording.s3.amazonaws.com"];
-
-const escapeHtml = (s) =>
-  String(s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
-
-app.get("/player", (req, res) => {
-  let src;
-  try {
-    const u = new URL(String(req.query.path));
-    if (u.protocol !== "https:" || !ALLOWED_RECORDING_HOSTS.includes(u.hostname)) {
-      throw new Error("host not allowed");
-    }
-    src = u.toString();
-  } catch (e) {
-    return res.status(400).send("Invalid recording link");
-  }
-
-  res.set("Content-Security-Policy", "frame-ancestors https://*.hubspot.com");
-  res.type("html").send(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Recording</title>
-  <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet">
-  <style>
-    html, body { margin: 0; height: 100%; background: #000; }
-    #wrap { width: 100vw; height: 100vh; }
-    .video-js .vjs-big-play-button { top: 45% !important; left: 45% !important; }
-    .video-js .vjs-control-bar { background-color: #4B6790; }
-  </style>
-</head>
-<body>
-  <div id="wrap">
-    <video id="my-player" class="video-js" controls preload="auto" playsinline
-      data-setup='{"fill": true}'>
-      <source src="${escapeHtml(src)}" type="video/mp4">
-      <p class="vjs-no-js">Please enable JavaScript to view this video.</p>
-    </video>
-  </div>
-  <script src="https://vjs.zencdn.net/7.10.2/video.min.js"></script>
-</body>
-</html>`);
-});
 
 app.get("/thankyou", (req, res) => {
   res.send("Thank you for submitting the form. We will reach out to you soon.");
