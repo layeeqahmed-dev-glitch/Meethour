@@ -182,9 +182,9 @@ const Dashboard = ({ context }: DashboardProps) => {
   return (
     <Tile>
       <Tabs selected={selected} onSelectedChange={setSelected}>
-        {/* ---------------------------------------
-            MY MEETINGS
-        --------------------------------------- */}
+        {/* // ---------------------------------------
+            // MY MEETINGS
+            // --------------------------------------- */}
         <Tab tabId="my-meetings" title="My Meetings">
           <Flex direction="column" gap="lg">
             <ButtonRow>
@@ -387,7 +387,7 @@ const RecordingCard = ({ r }: { r: Recording }) => {
 
         <Button
           href={{
-            url: `https://portal.meethour.org/customer/view_recording/${r.id}`,
+            url: `https://portal.meethour.io/customer/view_recording/${r.id}`,
             external: true,
           }}
           variant="secondary"

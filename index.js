@@ -106,7 +106,7 @@ app.get("/callback", async (req, res) => {
       });
       const meethourRedirect = `https://hubspot.meethour.io/meethour-callback?sid=${sessionId}`;
       return res.redirect(
-        `https://portal.meethour.org/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
+        `https://portal.meethour.io/serviceLogin?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk&redirect_uri=${encodeURIComponent(meethourRedirect)}&device_type=web&response_type=get`,
       );
     }
 
@@ -2064,7 +2064,7 @@ app.get("/callback", async (req, res) => {
     console.log("====================================");
 
     const meethourLoginUrl =
-      `https://portal.meethour.org/serviceLogin` +
+      `https://portal.meethour.io/serviceLogin` +
       `?client_id=0pvx3tst84t7x3kym5wyvstnvol679mwmovk` +
       `&redirect_uri=${encodeURIComponent(meethourRedirect)}` +
       `&device_type=web` +
@@ -2118,7 +2118,7 @@ app.get("/meethour-callback", async (req, res) => {
 
     // Fetch MeetHour user profile to get user ID and timezone
     const profileRes = await axios.post(
-      "https://api.meethour.org/api/v1.2/customer/user_details",
+      "https://api.meethour.io/api/v1.2/customer/user_details",
       {},
       {
         headers: {
@@ -2223,7 +2223,7 @@ app.post("/create-meeting", async (req, res) => {
       console.log("No invitees");
       return res.json({
         conferenceId: "no-attendees-" + Date.now(),
-        conferenceUrl: "https://meethour.org",
+        conferenceUrl: "https://meethour.io",
         conferenceDetails: "No attendees provided",
       });
     }
@@ -2234,7 +2234,7 @@ app.post("/create-meeting", async (req, res) => {
       console.log("No portalId in request");
       return res.json({
         conferenceId: "error-" + Date.now(),
-        conferenceUrl: "https://meethour.org",
+        conferenceUrl: "https://meethour.io",
         conferenceDetails: "Portal ID missing",
       });
     }
@@ -2248,7 +2248,7 @@ app.post("/create-meeting", async (req, res) => {
       console.log("No MeetHour token found for portal:", portalId);
       return res.json({
         conferenceId: "error-" + Date.now(),
-        conferenceUrl: "https://meethour.org",
+        conferenceUrl: "https://meethour.io",
         conferenceDetails: "MeetHour not connected for this account",
       });
     }
@@ -2258,7 +2258,7 @@ app.post("/create-meeting", async (req, res) => {
 
     // Fetching User Deatails API to get timezone
     const userDetailsRes = await axios.post(
-      "https://api.meethour.org/api/v1.2/customer/user_details",
+      "https://api.meethour.io/api/v1.2/customer/user_details",
       {},
       {
         headers: {
@@ -2338,7 +2338,7 @@ app.post("/create-meeting", async (req, res) => {
     console.log("MEETHOUR PAYLOAD:", JSON.stringify(payload, null, 2));
 
     const response = await axios.post(
-      "https://api.meethour.org/api/v1.2/meeting/schedulemeeting",
+      "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
       payload,
       {
         headers: {
@@ -2420,8 +2420,8 @@ app.post("/create-meeting", async (req, res) => {
     console.log("STACK:", err.stack);
     return res.json({
       conferenceId: "error-" + Date.now(),
-      conferenceUrl: "https://meethour.org",
-      conferenceDetails: "Temporary issue, try again",
+      conferenceUrl: "https://meethour.io",
+      conferenceDetails: "Please upgrade your free plan to Developer or Pro Plan",
     });
   }
 });
@@ -2471,7 +2471,7 @@ app.post("/delete-meeting", async (req, res) => {
 
     // Delete meeting from MeetHour
     const response = await axios.post(
-      "https://api.meethour.org/api/v1.2/meeting/deletemeeting",
+      "https://api.meethour.io/api/v1.2/meeting/deletemeeting",
       { meeting_id: meetingRecord.meethourMeetingId },
       {
         headers: {
@@ -2619,7 +2619,7 @@ app.post("/deal-webhook", async (req, res) => {
       };
 
       const meetingRes = await axios.post(
-        "https://api.meethour.org/api/v1.2/meeting/schedulemeeting",
+        "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
 
         meetingPayload,
         {
@@ -2834,7 +2834,7 @@ app.post("/form-webhook", async (req, res) => {
 
     // CREATE MEETING
     const meetingRes = await axios.post(
-      "https://api.meethour.org/api/v1.2/meeting/schedulemeeting",
+      "https://api.meethour.io/api/v1.2/meeting/schedulemeeting",
       payload,
       {
         headers: {
@@ -3024,8 +3024,8 @@ app.get("/api/meethour-meetings", async (req, res) => {
 
     const endpoint =
       type === "completed"
-        ? "https://api.meethour.org/api/v1.2/meeting/completedmeetings"
-        : "https://api.meethour.org/api/v1.2/meeting/upcomingmeetings";
+        ? "https://api.meethour.io/api/v1.2/meeting/completedmeetings"
+        : "https://api.meethour.io/api/v1.2/meeting/upcomingmeetings";
 
     const meetingsRes = await axios.post(
       endpoint,
@@ -3140,7 +3140,7 @@ app.get("/api/meethour-recordings", async (req, res) => {
     console.log("Fetching recordings:", filterBy);
 
     const recRes = await axios.post(
-      "https://api.meethour.org/api/v1.2/customer/videorecordinglist",
+      "https://api.meethour.io/api/v1.2/customer/videorecordinglist",
       {
         filter_by: filterBy,
         limit: 10,
